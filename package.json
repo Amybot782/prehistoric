@@ -1,0 +1,52 @@
+{
+  "name": "prehistoric",
+  "productName": "Prehistoric",
+  "version": "0.1.0",
+  "description": "Jeu de survie et de civilisation préhistorique en pixel art isométrique",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "start": "vite build && electron .",
+    "electron": "electron .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vite build && node tests/e2e/smoke.mjs",
+    "dist:win": "vite build && electron-builder --win --x64 --dir"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^38.8.6",
+    "electron-builder": "^26.18.0",
+    "phaser": "3.90.0",
+    "vite": "^6.4.5",
+    "vitest": "^3.2.7"
+  },
+  "build": {
+    "appId": "com.prehistoric.game",
+    "productName": "Prehistoric",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

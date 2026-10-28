@@ -1,0 +1,9 @@
+{
+  "_comment": "Remplacement des graphismes provisoires. Pour utiliser une vraie image, renseigner 'file' (chemin relatif à ce dossier public) et, pour une planche d'animation, frameWidth/frameHeight. originX/originY (0 à 1) indiquent le point de l'image posé au sol. Sans 'file', le jeu génère le graphisme provisoire.",
+  "version": 1,
+  "overrides": {
+    "player": { "file": null },
+    "prop_tree": { "file": null },
+    "tile_grass_0": { "file": null }
+  }
+}

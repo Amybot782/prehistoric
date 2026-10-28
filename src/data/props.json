@@ -1,0 +1,10 @@
+{
+  "_comment": "Objets du décor. Le collider est exprimé en tuiles monde, relatif au centre de la tuile. 'texture' renvoie au manifeste d'assets.",
+  "tree": { "texture": "prop_tree", "collider": { "type": "circle", "r": 0.22 }, "occludes": true },
+  "pine": { "texture": "prop_pine", "collider": { "type": "circle", "r": 0.2 }, "occludes": true },
+  "rock": { "texture": "prop_rock", "collider": { "type": "circle", "r": 0.38 }, "occludes": false },
+  "boulder": { "texture": "prop_boulder", "collider": { "type": "aabb", "hw": 0.45, "hh": 0.45 }, "occludes": true },
+  "bush": { "texture": "prop_bush", "collider": null, "occludes": false },
+  "wall_x": { "texture": "prop_wall_x", "collider": { "type": "aabb", "hw": 0.5, "hh": 0.12 }, "occludes": true },
+  "wall_y": { "texture": "prop_wall_y", "collider": { "type": "aabb", "hw": 0.12, "hh": 0.5 }, "occludes": true }
+}

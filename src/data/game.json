@@ -1,0 +1,31 @@
+{
+  "simulation": {
+    "tickRate": 60,
+    "maxFrameDeltaMs": 250,
+    "maxStepsPerFrame": 8
+  },
+  "iso": {
+    "tileWidth": 32,
+    "tileHeight": 16,
+    "heightUnit": 16
+  },
+  "camera": {
+    "referenceHeight": 360,
+    "zoomStep": 0.5,
+    "minZoomFactor": 0.5,
+    "maxZoomFactor": 2.5,
+    "followSharpness": 14
+  },
+  "player": {
+    "radius": 0.28,
+    "walkSpeed": 3.2,
+    "runSpeed": 5.2,
+    "acceleration": 40,
+    "deceleration": 30
+  },
+  "physics": {
+    "spatialCellSize": 2,
+    "maxSubstepDistance": 0.12,
+    "resolveIterations": 4
+  }
+}

@@ -1,0 +1,1 @@
+Placez ici les fichiers (buildings). Voir docs/ASSETS.md pour les déclarer dans assets/manifest.json.

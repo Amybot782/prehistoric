@@ -1,0 +1,10 @@
+{
+  "_comment": "Types de sol. 'solid' bloque les déplacements (eau profonde). Les couleurs servent aux tuiles provisoires générées et à la mini-carte.",
+  "types": [
+    { "id": 0, "key": "grass", "solid": false, "colors": ["#5d8a3a", "#679641", "#527d33"] },
+    { "id": 1, "key": "dirt", "solid": false, "colors": ["#8a6a43", "#94744b", "#7d603c"] },
+    { "id": 2, "key": "sand", "solid": false, "colors": ["#d8c27a", "#e0cb86", "#cdb66f"] },
+    { "id": 3, "key": "water", "solid": true, "colors": ["#2f6f9e", "#3779a8", "#2a6591"] },
+    { "id": 4, "key": "stone", "solid": false, "colors": ["#8b8d86", "#94968f", "#80827b"] }
+  ]
+}

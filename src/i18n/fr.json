@@ -1,0 +1,23 @@
+{
+  "boot.loading": "Chargement…",
+  "debug.title": "Débogage (F3)",
+  "debug.fps": "FPS : {fps} ({ms} ms)",
+  "debug.tick": "Simulation : tick {tick}, {rate} Hz, échelle x{scale}",
+  "debug.player": "Joueur monde : x {x}  y {y}",
+  "debug.tile": "Tuile : ({tx}, {ty}) {terrain}",
+  "debug.screen": "Joueur écran : x {sx}  y {sy}",
+  "debug.mouse": "Souris : tuile ({tx}, {ty})  monde ({x}, {y})",
+  "debug.speed": "Vitesse : {speed} t/s {state}",
+  "debug.camera": "Zoom : x{zoom}  (base x{base})",
+  "debug.world": "Objets : {props}  Colliders : {colliders}  Sprites visibles : {visible}",
+  "debug.help": "F3 panneau · F4 collisions · F6 grille · molette ou +/- zoom · 0 zoom par défaut · Maj courir",
+  "debug.running": "(course)",
+  "debug.walking": "(marche)",
+  "debug.idle": "(arrêt)",
+  "hint.controls": "ZQSD / WASD : se déplacer · Maj : courir · Molette : zoom · F3 : débogage",
+  "terrain.grass": "herbe",
+  "terrain.dirt": "terre",
+  "terrain.sand": "sable",
+  "terrain.water": "eau",
+  "terrain.stone": "pierre"
+}
