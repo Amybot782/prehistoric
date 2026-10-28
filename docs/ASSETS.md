@@ -37,12 +37,12 @@ Si le fichier est absent ou illisible, le jeu utilise le graphisme provisoire et
 | `prop_stump`, `prop_branch`, `prop_mushroom` | vegetation | Souche, branche au sol, champignons |
 | `item_<objet>` | ui | Icône d'inventaire 16×16 (`wood`, `stick`, `stone`, `flint`, `fiber`, `reed`, `resin`, `clay`, `berries`, `mushroom`, `loincloth`), aussi dessinée au sol quand l'objet est posé |
 | `prop_wall_x`, `prop_wall_y` | buildings | Pièces de mur (deux orientations) |
-| `tile_<sol>_<0..2>` | terrain | Trois variantes par type de sol (`grass`, `dirt`, `sand`, `water`, `stone`, `shallow_water`, `forest_floor`, `mud`, `swamp_grass`, `gravel`, `clay`) |
+| `tile_<sol>_<n>` | terrain | Variantes par type de sol (3 par défaut, plus si `variants` est renseigné dans `src/data/terrain.json`, ex. 8 pour `grass`) (`grass`, `dirt`, `sand`, `water`, `stone`, `shallow_water`, `forest_floor`, `mud`, `swamp_grass`, `gravel`, `clay`) |
 | `face_<sol>_left`, `face_<sol>_right` | terrain | Parois d'une tuile surélevée (16×16 px, côté gauche et côté droit, 8 px de haut par niveau) |
 
 ## Planches de tuiles de sol
 
-Une grande planche par sol (3 tuiles en haut, paroi gauche et paroi droite en dessous), nommée d'après le sol (`grass.png`, `stone.png`…), peut être découpée automatiquement :
+Une grande planche par sol (3 tuiles en haut, paroi gauche et paroi droite en dessous), nommée d'après le sol (`grass.png`, `stone.png`…, ou `grass-b.png` pour une planche de variantes en plus), peut être découpée automatiquement :
 
 ```
 python3 scripts/slice-terrain.py <dossier des planches> public/assets/terrain

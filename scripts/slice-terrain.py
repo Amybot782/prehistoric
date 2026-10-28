@@ -8,7 +8,10 @@ from scipy import ndimage
 # (needs pillow, numpy, scipy)
 D=sys.argv[1]+'/'
 OUT=sys.argv[2]
-SHEETS={f[:-4]:f[:-4] for f in sorted(os.listdir(D)) if f.endswith('.png') and not f.startswith('apercu')}
+# Several sheets can feed one terrain (grass.png, grass-b.png...): their tiles become extra variants.
+SHEETS={f[:-4]:f[:-4].split('-')[0] for f in sorted(os.listdir(D),key=lambda f:(f[:-4].split('-')[0],'-' in f,f)) if f.endswith('.png') and not f.startswith('apercu')}
+count={}
+tiles={}  # key -> [(variant, pixels, sheet)]
 INSET=float(os.environ.get('INSET','0.1'))  # skips the drawn outline of each tile
 def comps(a):
   rgb=a[...,:3].astype(int); al=a[...,3]
@@ -17,7 +20,7 @@ def comps(a):
   fg=ndimage.binary_opening(fg,iterations=3)
   lab,n=ndimage.label(fg)
   sizes=ndimage.sum(fg,lab,range(1,n+1))
-  return [(lab==i+1) for i in range(n) if sizes[i]>20000]
+  return [(lab==i+1) for i in range(n) if sizes[i]>0.15*sizes.max()]
 def down(img,w,h):
   return img.resize((w,h),Image.BOX)
 def poly_mask(w,h,fn):
@@ -46,18 +49,30 @@ for f,key in SHEETS.items():
   for m in cs:
     ys,xs=np.nonzero(m)
     x0,x1,y0=xs.min(),xs.max(),ys.min()
-    if x1-x0>400: tops.append((x0,x1,y0,m))
+    if x1-x0>ys.max()-y0: tops.append((x0,x1,y0,m))
     else: faces.append((x0,x1,y0,ys.max()))
   tops.sort(key=lambda t:t[0]); faces.sort()
-  for v,(x0,x1,y0,m) in enumerate(tops):
+  first=key not in count; count.setdefault(key,0)
+  for x0,x1,y0,m in tops:
+    v=count[key]; count[key]+=1
     ys,xs=np.nonzero(m)
     yl=int(np.median(ys[xs<=x0+3])); yr=int(np.median(ys[xs>=x1-3]))
     yc=(yl+yr)/2; cx=(x0+x1)/2; W=(x1-x0)*(1-2*INSET)
     box=(int(cx-W/2),int(yc-W/4),int(cx+W/2),int(yc+W/4))
     t=flat(np.asarray(down(im.crop(box),32,16)).copy().astype(float))
-    save(t,dia,f'{OUT}/{key}_{v}.png')
-  for side,(x0,x1,y0,y1) in zip(['left','right'],faces):
+    tiles.setdefault(key,[]).append((v,t,f))
+  for side,(x0,x1,y0,y1) in zip(['left','right'],faces if first else []):
     i=int((x1-x0)*0.03)
     t=np.asarray(down(im.crop((x0+i,y0+i,x1-i,y1-i)),16,16)).copy()
     save(t,lf if side=='left' else rf,f'{OUT}/{key}_{side}.png')
-  print(key,len(tops),len(faces))
+  print(f,key,len(tops),len(faces))
+# Sheets of one terrain are drawn in slightly different tones: bring each sheet
+# to the terrain's average colour so their tiles mix without patches.
+for key,lst in tiles.items():
+  mean=lambda ts: np.mean([t[dia][:,:3].mean(0) for t in ts],0)
+  target=mean([t for _,t,_ in lst])
+  for sheet in {f for _,_,f in lst}:
+    ts=[t for _,t,f in lst if f==sheet]; d=target-mean(ts)
+    for t in ts: t[...,:3]=np.clip(t[...,:3]+d,0,255)
+  for v,t,_ in lst: save(t,dia,f'{OUT}/{key}_{v}.png')
+print('variants',count)

@@ -187,6 +187,31 @@
       "file": "assets/terrain/water_2.png",
       "originX": 0.5,
       "originY": 0.5
+    },
+    "tile_grass_3": {
+      "file": "assets/terrain/grass_3.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_4": {
+      "file": "assets/terrain/grass_4.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_5": {
+      "file": "assets/terrain/grass_5.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_6": {
+      "file": "assets/terrain/grass_6.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_7": {
+      "file": "assets/terrain/grass_7.png",
+      "originX": 0.5,
+      "originY": 0.5
     }
   }
 }

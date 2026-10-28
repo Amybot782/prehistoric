@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DepthLayer, objectDepth } from '../iso/depth.js';
-import { terrainTextureKey, faceTextureKey, TERRAIN_VARIANTS } from '../assets/assetCatalog.js';
+import { terrainTextureKey, faceTextureKey, pickVariant } from '../assets/assetCatalog.js';
 import { hash2 } from '../core/random.js';
 
 /**
@@ -130,8 +130,8 @@ export class ChunkRenderer {
         const ly = d - lx;
         const i = ly * n + lx;
         const tx = chunk.cx * n + lx, ty = chunk.cy * n + ly;
-        const variant = Math.floor(hash2(tx, ty, 41) * TERRAIN_VARIANTS);
-        const tex = terrainTextureKey(types[chunk.ground[i]].key, variant);
+        const type = types[chunk.ground[i]];
+        const tex = terrainTextureKey(type.key, pickVariant(type, hash2(tx, ty, 41)));
         const x = (lx - ly) * (this.tw / 2) + this.rtWidth / 2 - this.tw / 2;
         const y = (lx + ly) * (this.th / 2) + this.headroom - chunk.height[i] * this.levelPx;
         rt.batchDrawFrame(tex, undefined, x, y, 1, this.heightTint(chunk.height[i]));
@@ -162,7 +162,8 @@ export class ChunkRenderer {
         const hN = this.world.heightAt(tx, ty - 1);
         const hW = this.world.heightAt(tx - 1, ty);
         if (hS >= h && hE >= h && hN >= h && hW >= h) continue;
-        const key = types[chunk.ground[i]].key;
+        const type = types[chunk.ground[i]];
+        const key = type.key;
         const depth = objectDepth(tx + 0.25, ty + 0.25);
         const z = h * this.world.levelHeight;
         const c = this.proj.worldToScreen(tx + 0.5, ty + 0.5, z, this._p);
@@ -170,8 +171,7 @@ export class ChunkRenderer {
         const tint = this.heightTint(h);
         if (hS < h) view.images.push(this._image(faceTextureKey(key, 'left'), cx, cy, this.origins[faceTextureKey(key, 'left')] ?? { x: 1, y: 0 }, depth - 0.002).setTint(tint));
         if (hE < h) view.images.push(this._image(faceTextureKey(key, 'right'), cx, cy, this.origins[faceTextureKey(key, 'right')] ?? { x: 0, y: 0 }, depth - 0.002).setTint(tint));
-        const variant = Math.floor(hash2(tx, ty, 41) * TERRAIN_VARIANTS);
-        view.images.push(this._image(terrainTextureKey(key, variant), cx, cy, tileOrigin, depth - 0.001).setTint(tint));
+        view.images.push(this._image(terrainTextureKey(key, pickVariant(type, hash2(tx, ty, 41))), cx, cy, tileOrigin, depth - 0.001).setTint(tint));
       }
     }
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCatalog, generatePlaceholder } from '../../src/assets/assetCatalog.js';
+import { buildCatalog, generatePlaceholder, pickVariant, terrainTextureKey } from '../../src/assets/assetCatalog.js';
 import { FACING_FRAMES } from '../../src/assets/placeholders.js';
 import terrain from '../../src/data/terrain.json';
 import props from '../../src/data/props.json';
@@ -35,5 +35,17 @@ describe('catalogue d’assets', () => {
     const rows = sheet.pc.height / sheet.frameHeight;
     expect(FACING_FRAMES).toHaveLength(8);
     for (const [row] of FACING_FRAMES) expect(row).toBeLessThan(rows);
+  });
+});
+
+describe('variantes de sol', () => {
+  it('suit les fréquences et chaque variante a une texture', () => {
+    const grass = terrain.types.find((t) => t.key === 'grass');
+    const counts = Array(grass.variants.length).fill(0);
+    for (let i = 0; i < 1000; i++) counts[pickVariant(grass, i / 1000)]++;
+    expect(counts[6]).toBeGreaterThan(counts[7] * 4); // herbe simple fréquente, souche rare
+    expect(pickVariant({ key: 'x' }, 0.99)).toBe(2); // 3 variantes par défaut
+    const keys = new Set(buildCatalog(terrain.types).map((e) => e.key));
+    grass.variants.forEach((_, v) => expect(keys.has(terrainTextureKey('grass', v))).toBe(true));
   });
 });

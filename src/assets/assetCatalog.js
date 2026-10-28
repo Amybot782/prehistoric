@@ -33,7 +33,7 @@ export function buildCatalog(terrainTypes, items = {}) {
     { key: 'prop_wall_y', gen: 'wallY', folder: 'buildings' },
   ];
   for (const t of terrainTypes) {
-    for (let v = 0; v < TERRAIN_VARIANTS; v++) {
+    for (let v = 0; v < variantWeights(t).length; v++) {
       entries.push({ key: terrainTextureKey(t.key, v), gen: 'groundTile', args: [t.colors, v], folder: 'terrain' });
     }
     for (const side of ['left', 'right']) {
@@ -53,6 +53,19 @@ export function itemTextureKey(item) {
 }
 
 export const TERRAIN_VARIANTS = 3;
+
+/** Relative frequency of each ground variant ('variants' in terrain.json, default 3 equal). */
+export function variantWeights(type) {
+  return type.variants ?? Array(TERRAIN_VARIANTS).fill(1);
+}
+
+/** Variant for a stable random value r in [0, 1), following the weights. */
+export function pickVariant(type, r) {
+  const w = variantWeights(type);
+  let x = r * w.reduce((a, b) => a + b, 0);
+  for (let v = 0; v < w.length; v++) if ((x -= w[v]) < 0) return v;
+  return w.length - 1;
+}
 
 /** Side face of a raised tile ('left' = +y edge, 'right' = +x edge). */
 export function faceTextureKey(terrainKey, side) {
