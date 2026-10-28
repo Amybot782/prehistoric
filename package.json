@@ -1,7 +1,7 @@
 {
   "name": "prehistoric",
   "productName": "Prehistoric",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Jeu de survie et de civilisation préhistorique en pixel art isométrique",
   "type": "module",
   "main": "electron/main.cjs",
