@@ -26,8 +26,8 @@ de dossier à remplacer. Sans connexion, le jeu démarre normalement avec la ver
 Si une nouvelle version ne démarre pas, le jeu revient tout seul à la précédente et ne la réinstalle plus.
 
 Publier une version (développeur) : mettre à jour `version` dans `package.json`, écrire `docs/releases/vX.Y.Z.md`,
-puis pousser l'étiquette `vX.Y.Z`. Le workflow `.github/workflows/release.yml` construit le jeu sur Windows,
-lance les tests et publie `game.asar`, `game.json` et le zip Windows complet.
+puis envoyer sur `main`. Le workflow `.github/workflows/release.yml` voit qu'aucune release `vX.Y.Z` n'existe,
+construit le jeu sur Windows, lance les tests et publie `game.asar`, `game.json` et le zip Windows complet.
 
 ### Depuis le code source (développement)
 

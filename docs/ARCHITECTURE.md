@@ -116,4 +116,4 @@ l'exécutable et le code Electron restent ceux du zip installé.
   précédente et blocage de la version fautive.
 - `game.json` porte `minShell` : une version qui a besoin d'un nouvel exécutable n'est pas installée
   automatiquement ; le joueur est prévenu.
-- Publication : `.github/workflows/release.yml` sur étiquette `vX.Y.Z` (construction sur `windows-latest`).
+- Publication : `.github/workflows/release.yml` à chaque envoi sur `main` dont la version n'a pas encore de release (construction sur `windows-latest`).

@@ -1,15 +1,21 @@
-# Publie une version du jeu quand une étiquette vX.Y.Z est poussée.
-# Construit sur un vrai Windows, lance les tests, puis crée la release GitHub
-# avec : game.asar + game.json (mise à jour automatique dans le jeu) et le zip
-# Windows complet (première installation).
+# Publie automatiquement une version du jeu.
+# Déclenchement : chaque envoi sur main. Si la version de package.json n'a pas
+# encore de release, le jeu est construit sur un vrai Windows, testé, puis
+# publié avec : game.asar + game.json (mise à jour automatique dans le jeu) et
+# le zip Windows complet (première installation). Sinon, rien n'est publié.
 name: Release
 
 on:
   push:
-    tags: ['v*.*.*']
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -17,34 +23,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Vérifier que l'étiquette correspond à package.json
-        shell: bash
-        run: |
-          version=$(node -p "require('./package.json').version")
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "L'étiquette $GITHUB_REF_NAME ne correspond pas à package.json ($version)"; exit 1
-          fi
-
-      - run: npm ci
-      - run: npm test
-      - run: npm run dist:win
-
-      - name: Zip Windows complet
-        shell: pwsh
-        run: Compress-Archive -Path release/win-unpacked/* -DestinationPath "release/Prehistoric-$($env:GITHUB_REF_NAME.TrimStart('v'))-win-x64.zip"
-
-      - name: Créer la release
+      - name: Version à publier
+        id: v
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          notes="docs/releases/$GITHUB_REF_NAME.md"
+          version=$(node -p "require('./package.json').version")
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "La release v$version existe déjà : rien à publier."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.v.outputs.publish == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: steps.v.outputs.publish == 'true'
+        run: npm ci
+      - if: steps.v.outputs.publish == 'true'
+        run: npm test
+      - if: steps.v.outputs.publish == 'true'
+        run: npm run dist:win
+
+      - name: Zip Windows complet
+        if: steps.v.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          $version = "${{ steps.v.outputs.tag }}".TrimStart('v')
+          Compress-Archive -Path release/win-unpacked/* -DestinationPath "release/Prehistoric-$version-win-x64.zip"
+
+      - name: Créer la release
+        if: steps.v.outputs.publish == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+        run: |
+          notes="docs/releases/$TAG.md"
           [ -f "$notes" ] || notes=/dev/null
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$TAG" --target "$GITHUB_SHA" \
             release/game.asar release/game.json release/Prehistoric-*-win-x64.zip \
-            --title "Prehistoric $GITHUB_REF_NAME" --notes-file "$notes"
+            --title "Prehistoric $TAG" --notes-file "$notes"
