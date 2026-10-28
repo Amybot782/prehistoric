@@ -5,7 +5,7 @@
     { "id": 1, "key": "dirt", "solid": false, "variants": [1, 1, 0.3], "colors": ["#8a6a43", "#94744b", "#7d603c"], "face": ["#6f5335", "#584128"], "minimap": "#8a6a43" },
     { "id": 2, "key": "sand", "solid": false, "colors": ["#d8c27a", "#e0cb86", "#cdb66f"], "face": ["#b89f5f", "#9c844c"], "minimap": "#d8c27a" },
     { "id": 3, "key": "water", "solid": true, "colors": ["#2f6f9e", "#3779a8", "#2a6591"], "face": ["#245a80", "#1d4a6a"], "minimap": "#2d6a98" },
-    { "id": 4, "key": "stone", "solid": false, "variants": [1, 1, 0.15], "colors": ["#8b8d86", "#94968f", "#80827b"], "face": ["#6b6d66", "#575953"], "minimap": "#8b8d86" },
+    { "id": 4, "key": "stone", "solid": false, "variants": [1, 1, 0.5], "colors": ["#8b8d86", "#94968f", "#80827b"], "face": ["#6b6d66", "#575953"], "minimap": "#8b8d86" },
     { "id": 5, "key": "shallow_water", "solid": false, "colors": ["#4a90b8", "#5299c0", "#4486ad"], "face": ["#3a7396", "#2f5f7d"], "minimap": "#4f94bb" },
     { "id": 6, "key": "forest_floor", "solid": false, "colors": ["#4a7330", "#537d36", "#41682a"], "face": ["#6b4f30", "#523c24"], "minimap": "#456d2d" },
     { "id": 7, "key": "mud", "solid": false, "colors": ["#5e5236", "#66593b", "#544930"], "face": ["#4a402a", "#3a3220"], "minimap": "#5e5236" },
