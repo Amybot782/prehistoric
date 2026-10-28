@@ -10,7 +10,7 @@ Voir [docs/SUIVI.md](docs/SUIVI.md) pour l'avancement et [docs/PHASE1_RAPPORT.md
 
 ### Version Windows prête à l'emploi
 
-1. Extraire `Prehistoric-0.1.0-win-x64.zip` dans un dossier (par exemple `C:\Jeux\Prehistoric`).
+1. Télécharger le dernier `Prehistoric-X.Y.Z-win-x64.zip` (onglet *Releases* du dépôt) et l’extraire dans un dossier (par exemple `C:\Jeux\Prehistoric`).
 2. Double-cliquer sur `Prehistoric.exe`.
 
 Aucune installation de Node.js n'est nécessaire. Windows SmartScreen peut avertir que l'application
