@@ -1,0 +1,19 @@
+{
+  "_comment": "Recettes de fabrication (instantanée). 'id' : objet obtenu, 'count' : quantité (1 par défaut), 'cost' : ressources consommées, 'station' : atelier à moins de 'stationRange' tuiles (absent = à mains nues). L'ordre est celui du menu.",
+  "stationRange": 3,
+  "recipes": [
+    { "id": "rope", "count": 1, "cost": { "fiber": 3 } },
+    { "id": "stone_axe", "cost": { "flint": 1, "stick": 2, "rope": 1 } },
+    { "id": "stone_pick", "cost": { "stone": 2, "stick": 2, "rope": 1 } },
+    { "id": "workbench", "cost": { "wood": 8, "stone": 4 } },
+    { "id": "campfire", "cost": { "stick": 4, "stone": 5 } },
+    { "id": "wood_floor", "cost": { "wood": 2 }, "station": "workbench" },
+    { "id": "stone_floor", "cost": { "stone": 3 }, "station": "workbench" },
+    { "id": "wood_wall", "cost": { "wood": 4 }, "station": "workbench" },
+    { "id": "wood_door", "cost": { "wood": 4, "rope": 1 }, "station": "workbench" },
+    { "id": "thatch_roof", "cost": { "fiber": 4, "stick": 2 }, "station": "workbench" },
+    { "id": "fiber_mat", "cost": { "fiber": 5 }, "station": "workbench" },
+    { "id": "standing_stone", "cost": { "stone": 6 }, "station": "workbench" },
+    { "id": "torch", "count": 2, "cost": { "stick": 1, "fiber": 2 }, "station": "campfire" }
+  ]
+}

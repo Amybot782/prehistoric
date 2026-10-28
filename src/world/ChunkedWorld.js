@@ -1,7 +1,8 @@
 import { CollisionWorld } from '../physics/CollisionWorld.js';
-import { circle, aabb } from '../physics/shapes.js';
+import { aabb, footprint } from '../physics/shapes.js';
 import { EventBus } from '../core/EventBus.js';
 import { ChunkDeltaStore } from './chunks/ChunkDeltaStore.js';
+import { slotKey } from '../building/placement.js';
 
 /**
  * The world as a set of streamed chunks.
@@ -11,7 +12,7 @@ import { ChunkDeltaStore } from './chunks/ChunkDeltaStore.js';
  * applies the player's modifications from the delta store, and registers its
  * colliders; unloading removes everything but keeps the modifications.
  * Renderers and the minimap listen to `chunk:loaded` / `chunk:unloaded` /
- * `prop:added` / `prop:removed` / `prop:damaged` on `events` and never
+ * `prop:added` / `prop:removed` / `prop:damaged` / `prop:changed` on `events` and never
  * reach into the generator. Harvested objects leave a stump when their
  * definition says so and grow back after `regrowSeconds` of world time.
  *
@@ -34,6 +35,7 @@ export class ChunkedWorld {
     this.collisions = new CollisionWorld(physicsCfg);
     this.events = new EventBus();
     this.chunks = new Map();
+    this.built = new Map(); // slot key -> built piece, loaded chunks only
     this.entities = [];
     this.stats = { generated: 0, unloaded: 0, lastGenMs: 0 };
     this.time = 0; // world time in seconds, advanced by the simulation (regrowth)
@@ -81,6 +83,11 @@ export class ChunkedWorld {
 
   *props() {
     for (const c of this.chunks.values()) yield* c.props;
+  }
+
+  /** Built piece occupying a slot (see building/placement.js), if loaded. */
+  builtAt(key) {
+    return this.built.get(key);
   }
 
   addEntity(entity) {
@@ -133,11 +140,13 @@ export class ChunkedWorld {
       key, cx, cy, ground: data.ground, height: data.height, biome: data.biome,
       props: [], colliders: [], removed: new Map(),
     };
+    // Built pieces first: nothing grows back where the player has built.
+    for (const [id, e] of this.deltas.built(key)) this._addProp(chunk, this._builtData(id, e));
     for (const p of data.props) {
       const at = this.deltas.removedAt(key, p.id);
       if (at === undefined) {
         this._addProp(chunk, p);
-      } else if (this._regrowDue(p.type, at)) {
+      } else if (this._regrowDue(p.type, at) && !this._blocked(p)) {
         this.deltas.restoreProp(key, p.id);
         this._addProp(chunk, p);
       } else {
@@ -162,7 +171,7 @@ export class ChunkedWorld {
   _keepRemoved(chunk, raw, at) {
     chunk.removed.set(raw.id, { raw, at });
     const stump = this.propDefs[raw.type]?.stump;
-    if (stump) return this._addProp(chunk, { ...raw, id: `${raw.id}_stump`, type: stump, stumpOf: raw.id });
+    if (stump && !this._builtOver(raw)) return this._addProp(chunk, { ...raw, id: `${raw.id}_stump`, type: stump, stumpOf: raw.id });
     return null;
   }
 
@@ -171,12 +180,26 @@ export class ChunkedWorld {
     return { id, type: 'dropped', tx, ty, x: e.x, y: e.y, h: this.heightAt(tx, ty), item: e.item, count: e.count, texture: `item_${e.item}` };
   }
 
+  /** Prop data of a built piece. Edge pieces have one texture per side, doors one more when open. */
+  _builtData(id, e) {
+    const def = this.propDefs[e.type];
+    const edge = def.build.slot === 'edge';
+    const texture = edge ? `${def.texture}_${e.rot}${e.open ? '_open' : ''}` : def.texture;
+    return {
+      id, type: e.type, built: true, slot: slotKey(def.build.slot, e.x, e.y),
+      tx: Math.floor(e.x), ty: Math.floor(e.y), x: e.x, y: e.y, h: e.h, rot: e.rot, open: !!e.open, texture,
+    };
+  }
+
   unloadChunk(cx, cy) {
     const key = chunkKey(cx, cy);
     const chunk = this.chunks.get(key);
     if (!chunk) return;
     for (const c of chunk.colliders) this.collisions.removeStatic(c);
-    for (const p of chunk.props) if (p.collider) this.collisions.removeStatic(p.collider);
+    for (const p of chunk.props) {
+      if (p.collider) this.collisions.removeStatic(p.collider);
+      if (p.built) this.built.delete(p.slot);
+    }
     this.chunks.delete(key);
     this.stats.unloaded++;
     this.events.emit('chunk:unloaded', chunk);
@@ -188,10 +211,10 @@ export class ChunkedWorld {
     const prop = { ...p, def, chunk: chunk.key, z: (p.h ?? 0) * this.levelHeight, collider: null, hpLeft: 0 };
     if (def.harvest) prop.hpLeft = this.deltas.hpLeft(chunk.key, p.id) ?? def.harvest.hp;
     if (def.collider) {
-      const c = def.collider;
-      const shape = c.type === 'circle' ? circle(prop.x, prop.y, c.r) : aabb(prop.x - c.hw, prop.y - c.hh, prop.x + c.hw, prop.y + c.hh);
-      prop.collider = this.collisions.addStatic({ shape, solid: true, owner: prop });
+      const shape = footprint(def.collider, prop.x, prop.y, prop.rot === 'y');
+      prop.collider = this.collisions.addStatic({ shape, solid: !prop.open, owner: prop });
     }
+    if (prop.built) this.built.set(prop.slot, prop);
     chunk.props.push(prop);
     return prop;
   }
@@ -249,6 +272,9 @@ export class ChunkedWorld {
     this.events.emit('prop:removed', prop);
     if (prop.type === 'dropped') {
       this.deltas.removeDropped(chunk.key, prop.id);
+    } else if (prop.built) {
+      this.built.delete(prop.slot);
+      this.deltas.removeBuilt(chunk.key, prop.id);
     } else if (prop.stumpOf === undefined) {
       this.deltas.removeProp(chunk.key, prop.id, time);
       const raw = { id: prop.id, type: prop.type, tx: prop.tx, ty: prop.ty, x: prop.x, y: prop.y, h: prop.h };
@@ -274,6 +300,37 @@ export class ChunkedWorld {
     const prop = this._addProp(chunk, this._droppedData(id, { item, count, x, y }));
     this.events.emit('prop:added', prop);
     return prop;
+  }
+
+  /**
+   * Builds a piece at a spot from building/placement.js (checked by the
+   * caller). Returns the new prop, or null when its chunk is not loaded.
+   */
+  placeBuilt(type, spot) {
+    const chunk = this.chunkOf(Math.floor(spot.x), Math.floor(spot.y));
+    if (!chunk) return null;
+    // An edge lies between two tiles of the same height, so either gives its height.
+    const entry = { type, x: spot.x, y: spot.y, h: this.heightAt(Math.floor(spot.x), Math.floor(spot.y)), rot: spot.rot, open: false };
+    const id = this.deltas.addBuilt(chunk.key, entry);
+    const prop = this._addProp(chunk, this._builtData(id, entry));
+    this.events.emit('prop:added', prop);
+    if (spot.slot === 'floor' || spot.slot === 'object') {
+      // A stump under the new piece goes away; the tree cannot grow back while something is built there.
+      for (const p of chunk.props.filter((q) => q.stumpOf !== undefined && q.tx === prop.tx && q.ty === prop.ty)) {
+        chunk.props.splice(chunk.props.indexOf(p), 1);
+        this.events.emit('prop:removed', p);
+      }
+    }
+    return prop;
+  }
+
+  /** Opens or closes a door: an open door lets everything through. */
+  setDoorOpen(prop, open) {
+    prop.open = open;
+    prop.texture = `${prop.def.texture}_${prop.rot}${open ? '_open' : ''}`;
+    if (prop.collider) prop.collider.solid = !open;
+    this.deltas.updateBuilt(prop.chunk, prop.id, { open });
+    this.events.emit('prop:changed', prop);
   }
 
   /** Changes the size of a dropped stack (partial pick-up). */
@@ -304,8 +361,13 @@ export class ChunkedWorld {
     return grown;
   }
 
-  /** True when an entity overlaps where a solid object would grow back. */
+  _builtOver(p) {
+    return this.built.has(slotKey('floor', p.x, p.y)) || this.built.has(slotKey('object', p.x, p.y));
+  }
+
+  /** True when a built floor or object, or an entity, takes the place of an object growing back. */
   _blocked(raw) {
+    if (this._builtOver(raw)) return true;
     const c = this.propDefs[raw.type]?.collider;
     if (!c) return false;
     const r = c.type === 'circle' ? c.r : Math.max(c.hw, c.hh);

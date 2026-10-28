@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { t } from '../i18n/index.js';
 import { itemTextureKey } from '../assets/assetCatalog.js';
 import { EQUIP_SLOTS } from '../inventory/Equipment.js';
+import { CraftingPanel } from './CraftingPanel.js';
 
 /**
  * Survival interface: need bars, temperature, quick bar, inventory panel,
@@ -23,7 +24,7 @@ const SUPERSEDED = { hungry: 'starving', thirsty: 'dehydrated', cold: 'freezing'
 const STATUS_ORDER = ['starving', 'dehydrated', 'freezing', 'overheating', 'hungry', 'thirsty', 'cold', 'hot', 'exhausted'];
 
 export class SurvivalHud {
-  constructor(scene, survival, itemDefs) {
+  constructor(scene, survival, itemDefs, recipes) {
     this.scene = scene;
     this.sv = survival;
     this.defs = itemDefs;
@@ -64,10 +65,17 @@ export class SurvivalHud {
     this.deathTitle = this.text({ color: '#ffd0c0' }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.death);
     this.deathSub = this.text({ color: '#ffd0c0' }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.death);
 
+    this.crafting = new CraftingPanel(scene, survival, recipes, this);
+
     const ev = survival.events;
     this._off = [
       ev.on('gain', ({ item, count }) => this.note(t('gain', { count, item: t(`item.${item}`) }))),
-      ev.on('message', ({ key, params }) => this.note(t(key, params?.item ? { item: t(`item.${params.item}`) } : params), '#ffe0a0')),
+      ev.on('message', ({ key, params }) => this.note(t(key, {
+        ...params,
+        item: params?.item && t(`item.${params.item}`),
+        station: params?.station && t(`prop.${params.station}`),
+        why: params?.why && t(params.why),
+      }), '#ffe0a0')),
       ev.on('drink', () => this.note(t('action.drink'), '#a0d0ff')),
     ];
     scene.input.on('pointerdown', (p) => this.onPointerDown(p));
@@ -86,12 +94,18 @@ export class SurvivalHud {
 
   /** True when the mouse is over a part of the interface that takes clicks. */
   pointerOverUi(p = this.scene.input.activePointer) {
-    if (this.open || this.held) return true;
+    if (this.open || this.held || this.crafting.open) return true;
     const b = this.hotbarBox;
     return b && p.x >= b.x && p.x <= b.right && p.y >= b.y && p.y <= b.bottom;
   }
 
+  toggleCrafting(open = !this.crafting.open) {
+    if (open && this.open) this.toggleInventory();
+    this.crafting.toggle(open);
+  }
+
   toggleInventory() {
+    if (!this.open && this.crafting.open) this.crafting.toggle(false);
     this.open = !this.open;
     if (!this.open && this.held) {
       // Put the carried stack back; what does not fit goes on the ground.
@@ -156,6 +170,7 @@ export class SurvivalHud {
     this.panelHelp.setPosition(px + 8 * s, infoY + 22 * s).setWordWrapWidth(pw - 16 * s);
     this.deathTitle.setPosition(width / 2, height / 2 - 10 * s);
     this.deathSub.setPosition(width / 2, height / 2 + 12 * s);
+    this.crafting.layout();
     this._seen.inv = -1; // force a redraw
   }
 
@@ -190,6 +205,7 @@ export class SurvivalHud {
   }
 
   onPointerDown(p) {
+    if (this.crafting.onPointerDown(p)) return;
     const hit = this.slotAt(p.x, p.y);
     const inv = this.sv.inventory;
     const right = p.rightButtonDown();
@@ -238,7 +254,11 @@ export class SurvivalHud {
     tx.setText(msg);
     this.noteTexts.push(tx);
     this.notes.push({ tx, until: this.scene.time.now + 3000 });
-    if (this.notes.length > 6) this.notes.shift().tx.destroy();
+    if (this.notes.length > 6) {
+      const old = this.notes.shift().tx;
+      this.noteTexts.splice(this.noteTexts.indexOf(old), 1);
+      old.destroy();
+    }
   }
 
   update(time) {
@@ -288,17 +308,24 @@ export class SurvivalHud {
 
     // Action prompt.
     let prompt = '';
-    if (!sv.dead && !this.open) {
+    let blocked = false;
+    if (!sv.dead && !this.open && !this.crafting.open) {
       const tg = sv.target;
-      if (tg) {
+      const pv = sv.preview;
+      if (pv) {
+        blocked = !!pv.why;
+        prompt = pv.why ? t('prompt.cannotPlace', { why: t(pv.why) }) : t('prompt.place', { name: t(`item.${pv.type}`) });
+      } else if (tg) {
         const h = tg.def.harvest;
         const name = tg.type === 'dropped' ? `${t(`item.${tg.item}`)}${tg.count > 1 ? ` x${tg.count}` : ''}` : t(`prop.${tg.type}`);
         prompt = t(`prompt.${h.kind}`, { name, left: Math.round((tg.hpLeft / h.hp) * 100) });
       } else if (sv.water) {
         prompt = t('prompt.water');
       }
+      const dt = sv.dismantleTarget;
+      if (dt) prompt = [prompt, t('prompt.dismantle', { name: t(`prop.${dt.type}`) })].filter(Boolean).join('  ·  ');
     }
-    this.prompt.setText(prompt).setVisible(prompt !== '');
+    this.prompt.setText(prompt).setVisible(prompt !== '').setColor(blocked ? '#ff9a7a' : '#e8f0d8');
 
     // Notifications fade out.
     this.notes = this.notes.filter((n) => {
@@ -313,6 +340,7 @@ export class SurvivalHud {
     });
 
     this.drawPanel(changed);
+    this.crafting.update();
     this.drawDeath();
   }
 
@@ -394,5 +422,6 @@ function describe(stack, def) {
   if (def.food) lines.push(t('effect.food', { hunger: def.food.hunger ?? 0, thirst: def.food.thirst ?? 0 }));
   if (def.tool) lines.push(t('effect.tool', { wood: def.tool.wood ?? 1, stone: def.tool.stone ?? 1, plant: def.tool.plant ?? 1 }));
   if (def.insulation) lines.push(t('effect.insulation', { insulation: def.insulation }));
+  if (def.place) lines.push(t('effect.place'));
   return lines.join('\n');
 }

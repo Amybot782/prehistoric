@@ -56,7 +56,7 @@ const errors = [];
 try {
   await mkdir(shots, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('pageerror', (e) => errors.push(e.stack));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.goto(`${url}?map=test`);
   await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
@@ -283,6 +283,103 @@ try {
   check('Mort puis réapparition au point de départ', dead.dead && !back.survival.dead && back.survival.health === 100 && Math.hypot(back.player.x - 24.5, back.player.y - 24.5) < 0.5,
     `mort ${dead.dead}, santé après ${back.survival.health}`);
 
+  // ---- Phase 4: crafting and building (test area) ----------------------------
+  await teleport(24.5, 24.5);
+  for (const [item, n] of [['wood', 40], ['stone', 10], ['fiber', 20], ['stick', 10]]) await api('give', item, n);
+  const craftClick = async (id, shift = false) => {
+    const r = await api('craftRow', id);
+    if (shift) await page.keyboard.down('ShiftLeft');
+    await page.mouse.click(r.x, r.y);
+    if (shift) await page.keyboard.up('ShiftLeft');
+    await page.waitForTimeout(120);
+    return r.open;
+  };
+  const aimAt = async (x, y) => {
+    const q = await api('screenOf', x, y);
+    await page.mouse.move(q.x, q.y);
+    await page.waitForTimeout(120);
+    return q;
+  };
+  const buildAt = async (x, y) => {
+    const q = await aimAt(x, y);
+    await page.mouse.click(q.x, q.y);
+    await page.waitForTimeout(120);
+  };
+  const c0 = await sv();
+  await page.keyboard.press('KeyC');
+  await page.waitForTimeout(200);
+  const menuOpen = await craftClick('workbench');
+  await page.screenshot({ path: join(shots, '13-fabrication.png') });
+  const c1 = await sv();
+  check('Fabriquer un établi (menu C, clic)', menuOpen && c1.items.workbench === 1 && c1.items.wood === c0.items.wood - 8 && c1.items.stone === c0.items.stone - 4,
+    `établi ${c1.items.workbench ?? 0}, bois ${c0.items.wood} -> ${c1.items.wood}`);
+  await craftClick('wood_wall', true);
+  const c2 = await sv();
+  check('Sans établi posé, pas de mur', !c2.items.wood_wall, `murs ${c2.items.wood_wall ?? 0}`);
+  await page.keyboard.press('KeyC');
+  await api('selectItem', 'workbench');
+  await aimAt(27.5, 24.5);
+  const pv1 = (await sv()).preview;
+  await buildAt(27.5, 24.5);
+  const c3 = await sv();
+  check('Poser l’établi à la souris (aperçu valide)', pv1?.type === 'workbench' && pv1.why === null && c3.stations.includes('workbench') && !c3.items.workbench,
+    `aperçu ${JSON.stringify(pv1)}, ateliers ${c3.stations.join(',')}`);
+  await page.keyboard.press('KeyC');
+  await page.waitForTimeout(150);
+  await craftClick('wood_wall', true);
+  await craftClick('rope');
+  await craftClick('wood_door');
+  await craftClick('thatch_roof');
+  await page.keyboard.press('KeyC');
+  const c4 = await sv();
+  check('Fabrication instantanée près de l’établi (Maj + clic = 5)', c4.items.wood_wall === 5 && c4.items.wood_door === 1 && c4.items.thatch_roof === 1,
+    `murs ${c4.items.wood_wall}, porte ${c4.items.wood_door}, toit ${c4.items.thatch_roof}`);
+
+  // A wall on the north side of the player's tile blocks the way north (screen up-right).
+  await api('selectItem', 'wood_wall');
+  await buildAt(24.5, 24.05);
+  await aimAt(24.5, 24.05);
+  const pvTaken = (await sv()).preview;
+  check('Aperçu rouge quand la place est prise', pvTaken?.why === 'build.occupied', pvTaken?.why);
+  await teleport(24.5, 24.5);
+  await hold(['KeyW', 'KeyD'], 800);
+  const blocked = await state();
+  check('Le mur construit bloque le joueur', blocked.player.y > 24.3 && !blocked.overlapping, `y=${blocked.player.y.toFixed(2)}`);
+
+  // A door next to it: E opens it, the player walks through.
+  await api('selectItem', 'wood_door');
+  await buildAt(25.5, 24.05);
+  await teleport(25.5, 24.6);
+  await api('face', 0, -1);
+  await page.waitForTimeout(150);
+  await page.mouse.move(5, 400);
+  await hold(['KeyW', 'KeyD'], 500);
+  const shut = await state();
+  await page.keyboard.press('KeyE');
+  await page.waitForTimeout(250);
+  const opened = (await api('built')).find((p) => p.type === 'wood_door');
+  await hold(['KeyW', 'KeyD'], 700);
+  const through = await state();
+  check('Porte : fermée elle bloque, E l’ouvre, on passe', shut.player.y > 24.3 && opened?.open && !opened.solid && through.player.y < 23.8,
+    `fermée y=${shut.player.y.toFixed(2)}, ouverte ${opened?.open}, après y=${through.player.y.toFixed(2)}`);
+
+  // Roof on the wall, then X takes a wall down and gives it back.
+  await teleport(24.5, 25.5);
+  await api('selectItem', 'thatch_roof');
+  await buildAt(24.5, 24.5);
+  await page.mouse.move(5, 400);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: join(shots, '14-construction.png') });
+  const roofed = (await api('built')).some((p) => p.type === 'thatch_roof');
+  const wallsBefore = (await sv()).items.wood_wall;
+  await aimAt(24.5, 24.0);
+  const target = (await sv()).dismantle;
+  await page.keyboard.press('KeyX');
+  await page.waitForTimeout(200);
+  const c5 = await sv();
+  check('Toit posé sur le mur ; démonter (X) rend la pièce', roofed && target?.type && c5.items[target.type] === (target.type === 'wood_wall' ? wallsBefore + 1 : 1),
+    `visé ${target?.type}, murs ${wallsBefore} -> ${c5.items.wood_wall}`);
+
   // Zoom with the wheel.
   const z0 = (await state()).zoom;
   await page.mouse.move(640, 360);
@@ -355,6 +452,31 @@ try {
   check('Monde procédural chargé', start.world.mode === 'procedural' && start.world.seed === 'e2e-seed' && start.world.loadedChunks > 0 && !start.overlapping,
     `départ (${start.player.x}, ${start.player.y}) ${start.tile.terrain}/${start.tile.biome}, ${start.world.loadedChunks} chunks`);
   await page.screenshot({ path: join(shots, '05-monde-depart.png') });
+
+  // Constructions and the bag are saved: build a wall, reload, it is still there.
+  await page.evaluate(() => window.__PREHISTORIC__.give('wood_wall', 2));
+  await page.evaluate(() => window.__PREHISTORIC__.selectItem('wood_wall'));
+  const tx0 = Math.floor(start.player.x), ty0 = Math.floor(start.player.y);
+  let wallSpot = null;
+  for (const [x, y] of [[tx0 + 0.5, ty0 + 1.05], [tx0 + 0.5, ty0 - 0.95], [tx0 + 1.05, ty0 + 0.5], [tx0 - 0.95, ty0 + 0.5], [tx0 + 0.5, ty0 + 2.05]]) {
+    const q = await page.evaluate(([a, b]) => window.__PREHISTORIC__.screenOf(a, b), [x, y]);
+    await page.mouse.move(q.x, q.y);
+    await page.waitForTimeout(120);
+    if ((await state()).survival.preview?.why === null) {
+      await page.mouse.click(q.x, q.y);
+      await page.waitForTimeout(150);
+      wallSpot = (await state()).survival.preview;
+      break;
+    }
+  }
+  const builtBefore = await page.evaluate(() => window.__PREHISTORIC__.built());
+  await page.reload();
+  await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
+  await page.waitForTimeout(600);
+  const builtAfter = await page.evaluate(() => window.__PREHISTORIC__.built());
+  const reloaded = await state();
+  check('Sauvegarde : le mur et le sac restent après rechargement', builtBefore.length === 1 && builtAfter.length === 1 && builtAfter[0].x === builtBefore[0].x && reloaded.survival.items.wood_wall === 1,
+    `avant ${builtBefore.length}, après ${builtAfter.length} pièce(s), murs dans le sac ${reloaded.survival.items.wood_wall ?? 0} (${wallSpot ? 'posé' : 'aucune place'})`);
   const sample = () => page.evaluate(() => {
     const out = [];
     for (let y = -40; y < 40; y += 3) for (let x = -40; x < 40; x += 3) out.push(window.__PREHISTORIC__.tileAt(x, y));
@@ -404,7 +526,8 @@ try {
   }
   check('Les 4 biomes trouvés en jeu', Object.keys(found).length === 4, Object.keys(found).join(', '));
 
-  // Same seed after a reload: identical terrain.
+  // Same seed after a reload: identical terrain (back at the start, where the save will put the player).
+  await teleport(start.player.x, start.player.y);
   await page.reload();
   await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
   await page.waitForTimeout(500);

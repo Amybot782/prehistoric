@@ -7,6 +7,7 @@ import worldgen from '../data/worldgen.json';
 import bindings from '../data/keybindings.json';
 import items from '../data/items.json';
 import survivalCfg from '../data/survival.json';
+import recipes from '../data/recipes.json';
 import { IsoProjection } from '../iso/projection.js';
 import { FixedStepClock } from '../core/FixedStepClock.js';
 import { InputMap } from '../input/InputMap.js';
@@ -16,15 +17,19 @@ import { TestMapGenerator } from '../world/testMap.js';
 import { resolveWorldChoice, rememberWorld, newRandomWorldSettings } from '../world/worldSession.js';
 import { Player } from '../entities/Player.js';
 import { PlayerSurvival } from '../gameplay/PlayerSurvival.js';
-import { ChunkRenderer } from '../render/ChunkRenderer.js';
+import { ChunkRenderer, propDepth } from '../render/ChunkRenderer.js';
 import { PlayerView } from '../render/PlayerView.js';
 import { CameraController } from '../render/CameraController.js';
 import { DebugDraw } from '../debug/DebugDraw.js';
 import { DepthLayer } from '../iso/depth.js';
+import { ChunkDeltaStore } from '../world/chunks/ChunkDeltaStore.js';
+import { buildSave, readSave, writeSave } from '../save/autosave.js';
+import { slotKey } from '../building/placement.js';
 import { logger } from '../core/Logger.js';
 
 const log = logger.scope('world');
 const BIOME_KEYS = biomes.biomes.map((b) => b.key);
+const AUTOSAVE_SECONDS = 30;
 
 /**
  * Main gameplay scene. It owns the simulation objects and wires them to the
@@ -41,6 +46,7 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     const origins = this.registry.get('textureOrigins') ?? {};
+    this.textureOrigins = origins;
     this.projection = new IsoProjection(gameCfg.iso);
     this.clock = new FixedStepClock(gameCfg.simulation);
     this.inputMap = new InputMap(bindings);
@@ -54,6 +60,9 @@ export class WorldScene extends Phaser.Scene {
       ? new TestMapGenerator(worldgen.chunkSize)
       : new ProceduralGenerator({ settings: choice.settings, cfg: worldgen, terrainTypes: terrain.types, biomes: biomes.biomes });
     if (choice.mode === 'procedural') rememberWorld(choice.settings);
+    // The test area is never saved, so automated tests always start from the same state.
+    this.storage = choice.mode === 'procedural' ? safeStorage() : null;
+    const saved = readSave(this.storage, choice.settings.seed);
 
     this.world = new ChunkedWorld({
       generator,
@@ -62,13 +71,24 @@ export class WorldScene extends Phaser.Scene {
       physicsCfg: gameCfg.physics,
       levelHeight: worldgen.levelHeight,
       streaming: worldgen.streaming,
+      deltas: saved ? ChunkDeltaStore.fromJSON(saved.deltas) : undefined,
     });
+    if (saved) this.world.time = saved.time ?? 0;
     const spawn = generator.findSpawn();
     this.spawn = spawn;
-    this.player = this.world.addEntity(new Player(spawn.x, spawn.y, gameCfg.player));
-    this.streamAround(spawn.x, spawn.y, Infinity);
-    this.player.placeAt(spawn.x, spawn.y, this.world.groundZ(spawn.x, spawn.y));
-    this.survival = new PlayerSurvival({ world: this.world, player: this.player, cfg: survivalCfg, itemDefs: items, biomeKeys: BIOME_KEYS });
+    const start = saved?.player ?? spawn;
+    this.player = this.world.addEntity(new Player(start.x, start.y, gameCfg.player));
+    this.streamAround(start.x, start.y, Infinity);
+    this.player.placeAt(start.x, start.y, this.world.groundZ(start.x, start.y));
+    this.survival = new PlayerSurvival({ world: this.world, player: this.player, cfg: survivalCfg, itemDefs: items, biomeKeys: BIOME_KEYS, recipes });
+    if (saved) {
+      this.survival.restore(saved.survival);
+      log.info(`Sauvegarde chargée (${saved.savedAt})`);
+    }
+    this.survival.events.on('crafting', () => this.events.emit('open-crafting'));
+    this.saveTimer = 0;
+    this.saveNow = () => this.save();
+    window.addEventListener('beforeunload', this.saveNow);
     this.survival.events.on('death', ({ cause }) => log.info(`Mort du joueur (${cause ?? 'inconnue'})`));
     this.regrowTimer = 0;
 
@@ -78,6 +98,11 @@ export class WorldScene extends Phaser.Scene {
     this.cursor = this.add.image(0, 0, 'ui_tile_cursor').setOrigin(co.x, co.y).setDepth(DepthLayer.OVERLAY - 1);
     // Marks the object or water an action would apply to.
     this.targetMark = this.add.image(0, 0, 'ui_tile_cursor').setOrigin(co.x, co.y).setDepth(DepthLayer.GROUND_DECAL + 1).setTint(0x9cff7a);
+    // See-through preview of the piece about to be built.
+    this.ghost = this.add.image(0, 0, '__DEFAULT').setAlpha(0.65).setVisible(false);
+    // A quick click can start and end between two frames: remember it until the next update.
+    this._clicked = false;
+    this.input.on('pointerdown', (ptr) => { if (ptr.leftButtonDown()) this._clicked = true; });
     this.debugDraw = new DebugDraw(this, this.world, this.projection);
 
     this.cameraCtl = new CameraController(this.cameras.main, gameCfg.camera);
@@ -99,6 +124,8 @@ export class WorldScene extends Phaser.Scene {
     this.streamMs = 0;
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.save();
+      window.removeEventListener('beforeunload', this.saveNow);
       this.inputMap.detach(window);
       this.scale.off('resize', onResize);
       this.chunkView.destroy();
@@ -122,7 +149,10 @@ export class WorldScene extends Phaser.Scene {
     if (input.justPressed('debugOverlay')) this.events.emit('toggle-debug');
     if (input.justPressed('toggleMinimap')) this.events.emit('toggle-minimap');
     if (input.justPressed('inventory')) this.events.emit('toggle-inventory');
+    if (input.justPressed('crafting')) this.events.emit('toggle-crafting');
     const sv = this.survival;
+    if (input.justPressed('rotate')) sv.rotate();
+    if (input.justPressed('dismantle')) sv.dismantle();
     for (let i = 0; i < 8; i++) if (input.justPressed(`hotbar${i + 1}`)) sv.selectHotbar(i);
     if (input.justPressed('useItem')) sv.useSelected();
     if (input.justPressed('dropItem')) sv.dropSlot(sv.selected, input.isDown('run') ? Infinity : 1);
@@ -153,6 +183,8 @@ export class WorldScene extends Phaser.Scene {
       this.regrowTimer = 0;
       this.world.updateRegrowth();
     }
+    this.saveTimer += steps * dt;
+    if (this.saveTimer >= AUTOSAVE_SECONDS) this.save();
     if (sv.canRespawn()) this.respawn();
     input.endFrame();
 
@@ -167,6 +199,7 @@ export class WorldScene extends Phaser.Scene {
       x: this.playerView.screen.x,
       y: this.playerView.screen.y - 10,
       depth: this.playerView.depth,
+      underRoof: !!this.world.builtAt(slotKey('roof', p.x, p.y)),
     });
     this.updateMouse();
     this.updateActions();
@@ -186,7 +219,14 @@ export class WorldScene extends Phaser.Scene {
     }
     sv.updateTarget(hovered);
     const clicking = ptr.isDown && ptr.leftButtonDown() && !overUi && this.mouseOnCanvas;
-    if (this.inputMap.isDown('interact') || clicking) sv.interact();
+    const clicked = this._clicked && !overUi;
+    this._clicked = false;
+    // With a building piece in hand, a click builds instead of harvesting.
+    const pv = !overUi && this.mouseOnCanvas && this.cursor.visible ? sv.previewAt(this.mouse.x, this.mouse.y) : null;
+    sv.preview = pv;
+    this.updateGhost(pv);
+    if (pv && clicked) sv.placeAt(this.mouse.x, this.mouse.y);
+    if (this.inputMap.isDown('interact') || (clicking && !pv && !sv.selectedPiece())) sv.interact();
     const tg = sv.target;
     const w = sv.water;
     if (tg || w) {
@@ -196,6 +236,32 @@ export class WorldScene extends Phaser.Scene {
     } else {
       this.targetMark.setVisible(false);
     }
+  }
+
+  updateGhost(pv) {
+    const g = this.ghost;
+    if (!pv) {
+      g.setVisible(false);
+      return;
+    }
+    const { def, spot } = pv;
+    const key = def.build.slot === 'edge' ? `${def.texture}_${spot.rot}` : def.texture;
+    const o = this.textureOrigins[key] ?? { x: 0.5, y: 1 };
+    const h = this.world.heightAt(Math.floor(spot.x), Math.floor(spot.y));
+    const c = this.projection.worldToScreen(spot.x, spot.y, h * this.world.levelHeight);
+    const fake = { def, x: spot.x, y: spot.y, tx: Math.floor(spot.x), ty: Math.floor(spot.y) };
+    g.setTexture(key).setOrigin(o.x, o.y).setPosition(c.x, c.y).setVisible(true)
+      .setFlipX(spot.rot === 'y' && def.build.slot !== 'edge')
+      .setDepth(propDepth(fake) + 0.004)
+      .setTint(pv.why ? 0xff6050 : 0x90ff80);
+  }
+
+  /** Writes the automatic save (procedural worlds only). */
+  save() {
+    this.saveTimer = 0;
+    if (!this.storage || !this.world) return;
+    const data = buildSave({ settings: this.worldChoice.settings, world: this.world, player: this.player, survival: this.survival });
+    if (!writeSave(this.storage, this.worldChoice.settings.seed, data)) log.warn('Sauvegarde automatique impossible (stockage plein ou indisponible)');
   }
 
   respawn() {
@@ -342,6 +408,9 @@ export class WorldScene extends Phaser.Scene {
       exhausted: v.exhausted, dead: sv.dead, status: v.status, items: counts, slots: sv.inventory.toJSON(), equipment: { ...sv.equipment.slots }, selected: sv.selected,
       target: sv.target ? { id: sv.target.id, type: sv.target.type, hpLeft: sv.target.hpLeft } : null,
       water: !!sv.water, worldTime: this.world.time,
+      preview: sv.preview ? { type: sv.preview.type, x: sv.preview.spot.x, y: sv.preview.spot.y, rot: sv.preview.spot.rot, why: sv.preview.why } : null,
+      dismantle: sv.dismantleTarget ? { id: sv.dismantleTarget.id, type: sv.dismantleTarget.type } : null,
+      stations: [...sv.stations()],
     };
   }
 
@@ -375,6 +444,24 @@ export class WorldScene extends Phaser.Scene {
       tileAt: (tx, ty) => ({ ground: this.world.tileAt(tx, ty), height: this.world.heightAt(tx, ty), biome: this.world.biomeAt(tx, ty) }),
       newWorld: () => this.newRandomWorld(),
       give: (item, n) => this.survival.inventory.add(item, n),
+      save: () => this.save(),
+      // Puts an item in the last quick-bar slot and selects it (what the player does in the inventory).
+      selectItem: (item) => {
+        const sv = this.survival;
+        const i = sv.inventory.slots.findIndex((x) => x?.item === item);
+        const last = sv.cfg.inventory.hotbar - 1;
+        if (i < 0) return false;
+        if (i !== last) sv.inventory.move(i, last);
+        sv.selectHotbar(last);
+        return true;
+      },
+      built: () => [...this.world.built.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, rot: p.rot, open: p.open, solid: p.collider ? p.collider.solid : null })),
+      // Canvas point (pixels) showing world point (x, y) on the ground.
+      screenOf: (x, y) => {
+        const cam = this.cameras.main;
+        const c = this.projection.worldToScreen(x, y, this.world.groundZ(x, y));
+        return { x: (c.x - cam.worldView.x) * cam.zoom, y: (c.y - cam.worldView.y) * cam.zoom };
+      },
       setVital: (name, value) => { this.survival.vitals[name] = value; },
       face: (dx, dy) => { const l = Math.hypot(dx, dy); this.player.dirX = dx / l; this.player.dirY = dy / l; },
       propsNear: (x, y, r) => this.world.propsNear(x, y, r).map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, hpLeft: p.hpLeft, item: p.item, count: p.count })),
@@ -386,8 +473,22 @@ export class WorldScene extends Phaser.Scene {
         const v = kind === 'equip' ? (hud.open ? hud.panelEquip[key] : hud.equipViews[key]) : hud.open ? hud.slotViews[key] : hud.hotbar[key];
         return { x: v.x + half, y: v.y + half, open: hud.open };
       },
+      // Centre of a recipe row of the crafting menu, in canvas pixels.
+      craftRow: (id) => {
+        const panel = this.scene.get('UI').hud.crafting;
+        const r = panel.rows.find((row) => row.recipe.id === id);
+        return { x: r.x + 40, y: r.y + 10 * panel.hud.s, open: panel.open };
+      },
       logs: () => logger.entries.slice(-50),
       renderProbe: () => this.renderProbe(),
     };
+  }
+}
+
+function safeStorage() {
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : null;
+  } catch {
+    return null;
   }
 }

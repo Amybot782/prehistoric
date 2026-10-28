@@ -59,6 +59,15 @@
   "dropItem": [
     "KeyG"
   ],
+  "crafting": [
+    "KeyC"
+  ],
+  "rotate": [
+    "KeyR"
+  ],
+  "dismantle": [
+    "KeyX"
+  ],
   "inventory": [
     "KeyI",
     "Tab"

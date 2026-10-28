@@ -12,7 +12,7 @@
     "air": { "base": -3, "range": 34, "perLevelAbove": 1.6, "levelReference": 2, "inWater": -4, "biome": { "temperate_forest": 0, "plains": 1, "swamp": 2, "rocky_mountains": -5 } },
     "testMapAir": 18
   },
-  "actions": { "reach": 1.35, "hitCooldown": 0.55, "drinkCooldown": 0.7, "drinkAmount": 12, "eatCooldown": 0.35, "baseHitPower": 1 },
+  "actions": { "reach": 1.35, "hitCooldown": 0.55, "drinkCooldown": 0.7, "drinkAmount": 12, "eatCooldown": 0.35, "baseHitPower": 1, "buildReach": 4.5 },
   "respawn": { "delay": 3, "minHunger": 50, "minThirst": 50 },
   "inventory": { "slots": 24, "hotbar": 8 }
 }

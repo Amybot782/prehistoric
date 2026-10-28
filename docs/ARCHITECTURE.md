@@ -169,3 +169,30 @@ l'exécutable et le code Electron restent ceux du zip installé.
 - **Boucle du joueur** (`gameplay/PlayerSurvival.js`) : cible (devant le personnage ou sous la souris),
   action principale (récolter, ramasser, boire), manger, équiper, poser, mort et réapparition.
   Elle émet des événements que l'interface (`ui/SurvivalHud.js`) affiche.
+
+## 11. Fabrication et construction (phase 4)
+
+- **Recettes** (`data/recipes.json`, `crafting/crafting.js`) : fabrication instantanée, sans minuteur. Une recette
+  consomme son coût exact ; certaines demandent un atelier construit à moins de 3 tuiles (`build.station` :
+  établi, feu de camp). Le résultat va dans l'inventaire, le surplus tombe au sol.
+- **Pièces** : chaque pièce est un objet d'inventaire (`place: true` dans `items.json`) et un objet du décor du
+  même nom (`build` dans `props.json`). Elle occupe un **emplacement** (`building/placement.js`) : le sol d'une tuile
+  (planchers, fondations), son centre (établi, feu, décorations), le dessus (toit) ou un **bord** (murs, portes).
+  Un bord est partagé par les deux tuiles qu'il sépare : deux pièces ne peuvent jamais se superposer, et les murs
+  se raccordent aux angles (empreinte légèrement plus longue que la tuile).
+- **Placement** : la pièce choisie dans la barre rapide suit la souris (aperçu transparent vert ou rouge). Les murs
+  prennent le bord le plus proche du pointeur ; R tourne les autres pièces d'un quart de tour (empreinte comprise).
+  Refus expliqués : trop loin (4,5 tuiles), eau, sol de hauteur différente des deux côtés d'un mur, place prise,
+  arbre/rocher/joueur dans l'empreinte, toit sans mur, porte ou toit voisin pour le porter.
+- **Collisions** : les murs et portes fermées sont des rectangles du monde de collision, comme les rochers ;
+  une porte ouverte devient non solide. Une porte ne se ferme pas sur le joueur.
+- **Rendu** : murs et portes ont un graphisme par orientation (`_x`, `_y`, `_open`). Les planchers sont dessinés
+  juste au-dessus de leur tuile et sous tout ce qui s'y tient ; les toits au-dessus des murs de leur tuile.
+  Quand le joueur est sous un toit, tous les toits deviennent transparents pour montrer l'intérieur.
+- **Démontage** (X) : la pièce visée revient entière dans l'inventaire. Rien ne repousse sous un plancher ou un objet.
+- **Climat** : un feu de camp réchauffe l'air (jusqu'à +14 °C, sur 3,5 tuiles), un toit ajoute +4 °C.
+- **Sauvegarde automatique** (`save/autosave.js`) : toutes les 30 s, en quittant et en changeant de monde, pour
+  les mondes procéduraux (pas la zone de test). Contenu : modifications des chunks (format v3, avec les pièces
+  construites), temps du monde, position, inventaire, équipement et besoins. Une sauvegarde par seed dans le
+  stockage local de l'application, plus une copie de la précédente utilisée si la dernière est illisible.
+  Les fichiers de sauvegarde avec emplacements et menu restent prévus en phase 7.

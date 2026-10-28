@@ -7,7 +7,8 @@
  *     time it happened, so they can grow back after their regrowth delay;
  *   - damage: what is left of partly harvested objects (harvest points);
  *   - tiles: changed ground tiles;
- *   - dropped: items put on the ground by the player.
+ *   - dropped: items put on the ground by the player;
+ *   - built: pieces built by the player (walls, floors, workbench...).
  * Its size grows with what the player did, not with the area explored. It
  * survives chunk unloading and is what the save system writes.
  */
@@ -15,12 +16,13 @@ export class ChunkDeltaStore {
   constructor() {
     this.chunks = new Map();
     this.nextDropId = 1;
+    this.nextBuildId = 1;
   }
 
   _get(key, create) {
     let d = this.chunks.get(key);
     if (!d && create) {
-      d = { removed: new Map(), tiles: new Map(), damage: new Map(), dropped: new Map() };
+      d = { removed: new Map(), tiles: new Map(), damage: new Map(), dropped: new Map(), built: new Map() };
       this.chunks.set(key, d);
     }
     return d;
@@ -86,6 +88,30 @@ export class ChunkDeltaStore {
     return d ? [...d.dropped] : [];
   }
 
+  /** Built piece `{ type, x, y, h, rot, open }`; returns its id. */
+  addBuilt(chunkKey, entry) {
+    const id = `b${this.nextBuildId++}`;
+    this._get(chunkKey, true).built.set(id, { ...entry });
+    return id;
+  }
+
+  updateBuilt(chunkKey, id, changes) {
+    const e = this._get(chunkKey, false)?.built.get(id);
+    if (e) Object.assign(e, changes);
+  }
+
+  removeBuilt(chunkKey, id) {
+    const d = this._get(chunkKey, false);
+    if (!d) return;
+    d.built.delete(id);
+    this._prune(chunkKey, d);
+  }
+
+  built(chunkKey) {
+    const d = this._get(chunkKey, false);
+    return d ? [...d.built] : [];
+  }
+
   /** Applies stored ground changes to freshly generated chunk data (in place). */
   applyTiles(chunkKey, data) {
     const d = this._get(chunkKey, false);
@@ -102,7 +128,7 @@ export class ChunkDeltaStore {
   }
 
   _prune(key, d) {
-    if (d.removed.size === 0 && d.tiles.size === 0 && d.damage.size === 0 && d.dropped.size === 0) this.chunks.delete(key);
+    if (d.removed.size === 0 && d.tiles.size === 0 && d.damage.size === 0 && d.dropped.size === 0 && d.built.size === 0) this.chunks.delete(key);
   }
 
   get size() {
@@ -112,22 +138,24 @@ export class ChunkDeltaStore {
   toJSON() {
     const out = {};
     for (const [k, d] of this.chunks) {
-      out[k] = { removed: [...d.removed], tiles: [...d.tiles], damage: [...d.damage], dropped: [...d.dropped] };
+      out[k] = { removed: [...d.removed], tiles: [...d.tiles], damage: [...d.damage], dropped: [...d.dropped], built: [...d.built] };
     }
-    return { version: 2, nextDropId: this.nextDropId, chunks: out };
+    return { version: 3, nextDropId: this.nextDropId, nextBuildId: this.nextBuildId, chunks: out };
   }
 
-  /** Reads versions 1 (phase 2) and 2. */
+  /** Reads versions 1 (phase 2), 2 (phase 3) and 3 (constructions). */
   static fromJSON(json) {
     const store = new ChunkDeltaStore();
-    if (!json || (json.version !== 1 && json.version !== 2)) return store;
+    if (!json || ![1, 2, 3].includes(json.version)) return store;
     store.nextDropId = json.nextDropId ?? 1;
+    store.nextBuildId = json.nextBuildId ?? 1;
     for (const [k, d] of Object.entries(json.chunks ?? {})) {
       store.chunks.set(k, {
         removed: new Map(d.removed ?? []),
         tiles: new Map(d.tiles ?? []),
         damage: new Map(d.damage ?? []),
         dropped: new Map((d.dropped ?? []).map(([id, e]) => [id, { ...e }])),
+        built: new Map((d.built ?? []).map(([id, e]) => [id, { ...e }])),
       });
     }
     return store;

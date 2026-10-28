@@ -12,7 +12,10 @@ describe('catalogue d’assets', () => {
     const keys = new Set(catalog.map((e) => e.key));
     for (const [name, def] of Object.entries(props)) {
       if (name.startsWith('_') || name === 'dropped') continue; // dropped items use their item icon
-      expect(keys.has(def.texture), def.texture).toBe(true);
+      const edge = def.build?.slot === 'edge';
+      const needed = edge ? [`${def.texture}_x`, `${def.texture}_y`] : [def.texture];
+      if (def.build?.door) needed.push(`${def.texture}_x_open`, `${def.texture}_y_open`);
+      for (const k of needed) expect(keys.has(k), k).toBe(true);
     }
   });
 

@@ -31,6 +31,20 @@ export function buildCatalog(terrainTypes, items = {}) {
     { key: 'prop_pebble', gen: 'pebble', folder: 'terrain' },
     { key: 'prop_wall_x', gen: 'wallX', folder: 'buildings' },
     { key: 'prop_wall_y', gen: 'wallY', folder: 'buildings' },
+    { key: 'prop_wood_floor', gen: 'woodFloor', folder: 'buildings' },
+    { key: 'prop_stone_floor', gen: 'stoneFloor', folder: 'buildings' },
+    { key: 'prop_wood_wall_x', gen: 'woodWallX', folder: 'buildings' },
+    { key: 'prop_wood_wall_y', gen: 'woodWallY', folder: 'buildings' },
+    { key: 'prop_wood_door_x', gen: 'woodDoorX', folder: 'buildings' },
+    { key: 'prop_wood_door_y', gen: 'woodDoorY', folder: 'buildings' },
+    { key: 'prop_wood_door_x_open', gen: 'woodDoorXOpen', folder: 'buildings' },
+    { key: 'prop_wood_door_y_open', gen: 'woodDoorYOpen', folder: 'buildings' },
+    { key: 'prop_thatch_roof', gen: 'thatchRoof', folder: 'buildings' },
+    { key: 'prop_workbench', gen: 'workbench', folder: 'buildings' },
+    { key: 'prop_campfire', gen: 'campfire', folder: 'buildings' },
+    { key: 'prop_torch', gen: 'torch', folder: 'buildings' },
+    { key: 'prop_fiber_mat', gen: 'fiberMat', folder: 'buildings' },
+    { key: 'prop_standing_stone', gen: 'standingStone', folder: 'buildings' },
   ];
   for (const t of terrainTypes) {
     for (let v = 0; v < variantWeights(t).length; v++) {
@@ -42,7 +56,9 @@ export function buildCatalog(terrainTypes, items = {}) {
   }
   for (const [id, def] of Object.entries(items)) {
     if (id.startsWith('_')) continue;
-    entries.push({ key: itemTextureKey(id), gen: 'itemIcon', args: [def.icon?.shape, def.icon?.colors ?? ['#ff00ff', '#ff00ff']], folder: 'ui' });
+    entries.push(def.icon?.piece
+      ? { key: itemTextureKey(id), gen: 'pieceIcon', args: [def.icon.piece], folder: 'ui' }
+      : { key: itemTextureKey(id), gen: 'itemIcon', args: [def.icon?.shape, def.icon?.colors ?? ['#ff00ff', '#ff00ff']], folder: 'ui' });
   }
   return entries;
 }

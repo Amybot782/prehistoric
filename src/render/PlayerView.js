@@ -1,5 +1,6 @@
 import { objectDepth, resolveDynamicDepth } from '../iso/depth.js';
 import { shapeBounds } from '../physics/shapes.js';
+import { slotKey } from '../building/placement.js';
 import { FACING_FRAMES } from '../assets/placeholders.js';
 
 /**
@@ -72,7 +73,7 @@ export class PlayerView {
   }
 
   /**
-   * Raised tiles are sorted sprites (see ChunkRenderer). Those the player
+   * Raised tiles and built floors are sorted sprites (see ChunkRenderer). Those the player
    * stands on or above must never cover the character, even when its centre
    * is near their back edge.
    */
@@ -84,7 +85,8 @@ export class PlayerView {
     for (let ty = ty0 - 1; ty <= ty0 + 1; ty++) {
       for (let tx = tx0 - 1; tx <= tx0 + 1; tx++) {
         const h = w.heightAt(tx, ty);
-        if (h > 0 && h <= level) floor = Math.max(floor, objectDepth(tx + 0.25, ty + 0.25) + 0.01);
+        // Built floors lie on top of their tile (see propDepth): never over the character either.
+        if ((h > 0 || w.builtAt?.(slotKey('floor', tx, ty))) && h <= level) floor = Math.max(floor, objectDepth(tx + 0.25, ty + 0.25) + 0.01);
       }
     }
     return floor;

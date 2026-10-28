@@ -45,16 +45,19 @@ export function hitProp(world, prop, power) {
   return { gained, depleted: after <= 0, left: after / h.hp };
 }
 
+const harvestable = (p) => !!p.def.harvest;
+
 /**
  * Best object to act on: within reach, preferring what is in front of the
  * character (facing direction) and, when given, what the mouse points at.
+ * `accept` chooses which objects count (default: harvestable ones).
  */
-export function pickTarget(world, x, y, dirX, dirY, reach, hovered = null, scratch = []) {
-  if (hovered && hovered.def?.harvest && Math.hypot(hovered.x - x, hovered.y - y) <= reach + 0.35) return hovered;
+export function pickTarget(world, x, y, dirX, dirY, reach, hovered = null, scratch = [], accept = harvestable) {
+  if (hovered && accept(hovered) && Math.hypot(hovered.x - x, hovered.y - y) <= reach + 0.35) return hovered;
   let best = null;
   let bestScore = Infinity;
   for (const p of world.propsNear(x, y, reach + 0.5, scratch)) {
-    if (!p.def.harvest) continue;
+    if (!accept(p)) continue;
     const dx = p.x - x, dy = p.y - y;
     const d = Math.hypot(dx, dy);
     const edge = d - (p.def.collider?.r ?? p.def.collider?.hw ?? 0);

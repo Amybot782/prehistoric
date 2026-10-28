@@ -1,5 +1,5 @@
 {
-  "_comment": "Objets du décor. 'collider' en tuiles monde, relatif au centre de l'objet ; 'texture' renvoie au catalogue d'assets. 'harvest' : type de récolte (wood, stone, plant, pickup) et points de récolte ('hp', nombre de coups à mains nues). 'yields' : ressources obtenues au total, données au fur et à mesure. 'stump' : objet laissé à la place. 'regrowSeconds' : repousse (temps de jeu), absent = ne repousse pas.",
+  "_comment": "Objets du décor. 'collider' en tuiles monde, relatif au centre de l'objet ; 'texture' renvoie au catalogue d'assets. 'harvest' : type de récolte (wood, stone, plant, pickup) et points de récolte ('hp', nombre de coups à mains nues). 'yields' : ressources obtenues au total, données au fur et à mesure. 'stump' : objet laissé à la place. 'regrowSeconds' : repousse (temps de jeu), absent = ne repousse pas. 'build' : pièce construite par le joueur ('slot' : floor = sol d'une tuile, edge = bord de tuile (murs, portes), object = objet au centre d'une tuile, roof = toit au-dessus d'une tuile ; 'station' : atelier qui débloque des recettes à proximité ; 'warmth' : degrés gagnés près de l'objet). Les pièces 'edge' ont deux graphismes, <texture>_x et <texture>_y.",
   "tree": {"texture": "prop_tree", "collider": {"type": "circle", "r": 0.22}, "occludes": true, "yields": {"wood": 6}, "harvest": {"kind": "wood", "hp": 8}, "regrowSeconds": 900, "stump": "stump"},
   "pine": {"texture": "prop_pine", "collider": {"type": "circle", "r": 0.2}, "occludes": true, "yields": {"wood": 5, "resin": 1}, "harvest": {"kind": "wood", "hp": 7}, "regrowSeconds": 900, "stump": "stump"},
   "birch": {"texture": "prop_birch", "collider": {"type": "circle", "r": 0.18}, "occludes": true, "yields": {"wood": 4}, "harvest": {"kind": "wood", "hp": 6}, "regrowSeconds": 900, "stump": "stump"},
@@ -19,5 +19,15 @@
   "mushroom": {"texture": "prop_mushroom", "collider": null, "occludes": false, "yields": {"mushroom": 1}, "harvest": {"kind": "pickup", "hp": 1}, "regrowSeconds": 480},
   "dropped": {"texture": null, "collider": null, "occludes": false, "yields": {}, "harvest": {"kind": "pickup", "hp": 1}},
   "wall_x": {"texture": "prop_wall_x", "collider": {"type": "aabb", "hw": 0.5, "hh": 0.12}, "occludes": true, "yields": {}},
-  "wall_y": {"texture": "prop_wall_y", "collider": {"type": "aabb", "hw": 0.12, "hh": 0.5}, "occludes": true, "yields": {}}
+  "wall_y": {"texture": "prop_wall_y", "collider": {"type": "aabb", "hw": 0.12, "hh": 0.5}, "occludes": true, "yields": {}},
+  "workbench": {"texture": "prop_workbench", "collider": {"type": "aabb", "hw": 0.34, "hh": 0.26}, "occludes": false, "yields": {}, "harvest": {"kind": "station", "hp": 1}, "build": {"slot": "object", "station": "workbench"}},
+  "campfire": {"texture": "prop_campfire", "collider": {"type": "circle", "r": 0.3}, "occludes": false, "yields": {}, "harvest": {"kind": "station", "hp": 1}, "build": {"slot": "object", "station": "campfire", "warmth": 14, "warmthRadius": 3.5}},
+  "wood_floor": {"texture": "prop_wood_floor", "collider": null, "occludes": false, "yields": {}, "build": {"slot": "floor"}},
+  "stone_floor": {"texture": "prop_stone_floor", "collider": null, "occludes": false, "yields": {}, "build": {"slot": "floor"}},
+  "wood_wall": {"texture": "prop_wood_wall", "collider": {"type": "aabb", "hw": 0.62, "hh": 0.12}, "occludes": true, "yields": {}, "build": {"slot": "edge"}},
+  "wood_door": {"texture": "prop_wood_door", "collider": {"type": "aabb", "hw": 0.62, "hh": 0.12}, "occludes": true, "yields": {}, "harvest": {"kind": "door", "hp": 1}, "build": {"slot": "edge", "door": true}},
+  "thatch_roof": {"texture": "prop_thatch_roof", "collider": null, "occludes": false, "yields": {}, "build": {"slot": "roof", "shelter": 4}},
+  "torch": {"texture": "prop_torch", "collider": null, "occludes": false, "yields": {}, "build": {"slot": "object"}},
+  "fiber_mat": {"texture": "prop_fiber_mat", "collider": null, "occludes": false, "yields": {}, "build": {"slot": "object"}},
+  "standing_stone": {"texture": "prop_standing_stone", "collider": {"type": "circle", "r": 0.22}, "occludes": true, "yields": {}, "build": {"slot": "object"}}
 }

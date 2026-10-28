@@ -53,6 +53,10 @@ export class ChunkRenderer {
         if (view) this.addPropView(view, p);
       }),
       ev.on('prop:damaged', (p) => this.onDamaged(p)),
+      ev.on('prop:changed', (p) => {
+        const pv = this.views.get(p.chunk)?.props.get(p.id);
+        if (pv) pv.sprite.setTexture(p.texture).setOrigin(this.origins[p.texture]?.x ?? 0.5, this.origins[p.texture]?.y ?? 1);
+      }),
     ];
     for (const c of world.chunks.values()) this.addChunk(c);
   }
@@ -181,9 +185,10 @@ export class ChunkRenderer {
   addPropView(view, prop) {
     const p = this.proj.worldToScreen(prop.x, prop.y, prop.z, this._p);
     const key = prop.texture ?? prop.def.texture;
-    const sprite = this._image(key, p.x, p.y, this.origins[key] ?? { x: 0.5, y: 1 }, objectDepth(prop.x, prop.y));
-    if (prop.type !== 'dropped') sprite.setFlipX(hash2(prop.tx, prop.ty, 77) < 0.5);
-    const pv = { prop, sprite, faded: false, baseX: p.x, shakeUntil: 0 };
+    const sprite = this._image(key, p.x, p.y, this.origins[key] ?? { x: 0.5, y: 1 }, propDepth(prop));
+    if (prop.built) sprite.setFlipX(prop.rot === 'y' && prop.def.build.slot !== 'edge');
+    else if (prop.type !== 'dropped') sprite.setFlipX(hash2(prop.tx, prop.ty, 77) < 0.5);
+    const pv = { prop, sprite, faded: false, baseX: p.x, shakeUntil: 0, roof: prop.def.build?.slot === 'roof' };
     view.props.set(prop.id, pv);
     this.applyWear(pv);
   }
@@ -237,7 +242,7 @@ export class ChunkRenderer {
     let bestDepth = -Infinity;
     for (const prop of candidates) {
       const pv = this.views.get(prop.chunk)?.props.get(prop.id);
-      if (!pv || !pv.sprite.visible) continue;
+      if (!pv || !pv.sprite.visible || (pv.roof && pv.faded)) continue;
       const b = pv.sprite.getBounds(this._bounds);
       if (sx < b.x || sx > b.right || sy < b.y || sy > b.bottom) continue;
       if (pv.sprite.depth > bestDepth) {
@@ -250,7 +255,8 @@ export class ChunkRenderer {
 
   /**
    * @param {Phaser.Geom.Rectangle} worldView camera view in screen pixels
-   * @param {{x:number,y:number,depth:number}} focus player's screen position and depth
+   * @param {{x:number,y:number,depth:number,underRoof?:boolean}} focus player's screen position and
+   *   depth; under a roof, every roof turns see-through so the inside of the house shows.
    */
   update(worldView, focus) {
     let visible = 0;
@@ -275,13 +281,15 @@ export class ChunkRenderer {
         if (!inView) continue;
         visible++;
         let fade = false;
-        if (pv.prop.def.occludes && s.depth > focus.depth) {
+        if (pv.roof) {
+          fade = !!focus.underRoof;
+        } else if (pv.prop.def.occludes && s.depth > focus.depth) {
           const r = s.getBounds();
           fade = focus.x > r.x && focus.x < r.right && focus.y > r.y && focus.y < r.bottom;
         }
         if (fade !== pv.faded) {
           pv.faded = fade;
-          s.setAlpha(fade ? 0.45 : 1);
+          s.setAlpha(fade ? (pv.roof ? 0.12 : 0.45) : 1);
         }
       }
     }
@@ -293,4 +301,16 @@ export class ChunkRenderer {
     for (const v of this.views.values()) images += v.images.length + v.props.size;
     return { chunks: this.views.size, sprites: images, pooledTextures: this.rtPool.length, pooledImages: this.imagePool.length };
   }
+}
+
+/**
+ * Sort depth of an object. Floors lie flat: just above the raised tile they
+ * cover, below anything standing on them. Roofs sit over the walls of their
+ * tile, under what stands on the tiles in front.
+ */
+export function propDepth(prop) {
+  const slot = prop.def.build?.slot;
+  if (slot === 'floor') return objectDepth(prop.tx + 0.25, prop.ty + 0.25) + 0.0005;
+  if (slot === 'roof') return objectDepth(prop.tx + 0.8, prop.ty + 0.8);
+  return objectDepth(prop.x, prop.y);
 }

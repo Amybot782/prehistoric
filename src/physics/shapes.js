@@ -10,6 +10,24 @@ export function aabb(minX, minY, maxX, maxY) {
   return { type: 'aabb', minX, minY, maxX, maxY };
 }
 
+/**
+ * Shape of an object's collider definition ({type, r} or {type, hw, hh},
+ * relative to its centre) placed at (x, y). `turned` swaps the box axes
+ * (pieces rotated a quarter turn).
+ */
+export function footprint(c, x, y, turned = false) {
+  if (c.type === 'circle') return circle(x, y, c.r);
+  const hw = turned ? c.hh : c.hw, hh = turned ? c.hw : c.hh;
+  return aabb(x - hw, y - hh, x + hw, y + hh);
+}
+
+/** True when two shapes overlap (touching edges do not count). */
+export function shapesOverlap(a, b, scratch = {}) {
+  if (a.type === 'circle') return circleVsShape(a.x, a.y, a.r, b, scratch);
+  if (b.type === 'circle') return circleVsShape(b.x, b.y, b.r, a, scratch);
+  return a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
+}
+
 export function shapeBounds(s) {
   if (s.type === 'circle') return { minX: s.x - s.r, minY: s.y - s.r, maxX: s.x + s.r, maxY: s.y + s.r };
   return { minX: s.minX, minY: s.minY, maxX: s.maxX, maxY: s.maxY };

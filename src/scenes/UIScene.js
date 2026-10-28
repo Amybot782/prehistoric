@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js';
 import { Minimap } from '../ui/Minimap.js';
 import { SurvivalHud } from '../ui/SurvivalHud.js';
 import items from '../data/items.json';
+import recipes from '../data/recipes.json';
 
 /**
  * Screen-space interface drawn above the world, unaffected by camera zoom.
@@ -60,9 +61,13 @@ export class UIScene extends Phaser.Scene {
       this.minimapImage.setVisible(this.showMinimap);
     };
     this.worldScene.events.on('toggle-minimap', onToggleMinimap);
-    this.hud = new SurvivalHud(this, this.worldScene.survival, items);
+    this.hud = new SurvivalHud(this, this.worldScene.survival, items, recipes);
     const onToggleInventory = () => this.hud.toggleInventory();
+    const onToggleCrafting = () => this.hud.toggleCrafting();
+    const onOpenCrafting = () => this.hud.toggleCrafting(true);
     this.worldScene.events.on('toggle-inventory', onToggleInventory);
+    this.worldScene.events.on('toggle-crafting', onToggleCrafting);
+    this.worldScene.events.on('open-crafting', onOpenCrafting);
     const onResize = () => this.layout();
     this.scale.on('resize', onResize);
     // The world scene restarts on a new world: drop listeners so they do not pile up.
@@ -70,6 +75,8 @@ export class UIScene extends Phaser.Scene {
       this.worldScene.events.off('toggle-debug', onToggleDebug);
       this.worldScene.events.off('toggle-minimap', onToggleMinimap);
       this.worldScene.events.off('toggle-inventory', onToggleInventory);
+      this.worldScene.events.off('toggle-crafting', onToggleCrafting);
+      this.worldScene.events.off('open-crafting', onOpenCrafting);
       this.hud.destroy();
       this.scale.off('resize', onResize);
       this.minimap.destroy();

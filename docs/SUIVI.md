@@ -4,7 +4,9 @@
 
 | Version | Date | Contenu | Statut |
 |---|---|---|---|
-| 0.3.0 | 2026-10-28 | Phase 3 — Survie et récolte : besoins, température, récolte, inventaire, équipement, interface de survie | En attente de validation |
+| 0.4.0 | 2026-10-28 | Phase 4 — Fabrication et construction : recettes, établi, feu de camp, outils, sols, murs, portes, toits, décorations, démontage, sauvegarde automatique | En attente de validation |
+| 0.3.1 à 0.3.7 | 2026-10-28 | Textures de Raphael et redessinées, personnage dessiné d'après Raphael | Validées |
+| 0.3.0 | 2026-10-28 | Phase 3 — Survie et récolte : besoins, température, récolte, inventaire, équipement, interface de survie | Validée par Raphael |
 | 0.2.0 | 2026-10-28 | Phase 2 — Monde procédural : chunks, seed, relief, eau, 4 biomes, ressources naturelles, mini-carte | Validée par Raphael |
 | 0.1.2 | 2026-10-28 | Mise à jour automatique depuis GitHub Releases, retour à la version précédente en cas d'échec, publication automatique sur Windows | Installée par Raphael ; phase 1 validée |
 | 0.1.1 | 2026-10-28 | Correction du tremblement de l'image pendant la marche (zoom entier, caméra calée au pixel sur le joueur) | Incluse dans 0.1.2 |
@@ -34,28 +36,33 @@
 - Inventaire de 24 emplacements avec barre rapide, équipement main / corps, manger, boire, poser et ramasser.
 - Mort et réapparition au point de départ (inventaire conservé).
 - Interface de survie : barres, température, états, barre rapide, inventaire à la souris, messages, écran de mort.
-- 108 tests unitaires et 36 vérifications de bout en bout dans Chromium.
+- Fabrication instantanée (menu C) : corde, hache en silex, pioche en pierre, établi, feu de camp, pièces de construction, torches.
+- Construction pièce par pièce : plancher, fondation en pierre, mur, porte (s'ouvre avec E), toit de chaume, natte, pierre dressée, torche ; aperçu vert/rouge, rotation (R), démontage (X).
+- Les murs et portes fermées bloquent le joueur ; le feu de camp et le toit réchauffent.
+- Sauvegarde automatique du monde et du joueur (mondes procéduraux).
+- 135 tests unitaires et 45 vérifications de bout en bout dans Chromium.
 
 ## Fonctionnalités en cours
 
-- Aucune (phase 3 livrée, en attente de validation).
+- Aucune (phase 4 livrée, en attente de validation).
 
 ## Fonctionnalités futures (V1)
 
-- Phase 4 : craft instantané, ateliers, construction pièce par pièce, sauvegarde des constructions.
 - Phase 5 : animaux et dinosaures, combat, esquive, réapparition.
 - Phase 6 : habitants, métiers, pathfinding, transport.
 - Phase 7 : contenu V1 complet, jour/nuit, météo, sauvegardes, menus, paramètres, sons, installateur Windows.
 
 ## Bugs connus et limitations
 
-- Phase 3 non encore essayée sur le PC de Raphael.
-- Rien n'est encore sauvegardé quand on quitte le jeu (sauvegardes en phase 7) : l'inventaire repart de zéro à chaque lancement.
-- Pas encore de feu ni de fabrication (phase 4) : contre le froid, seul le pagne de départ aide.
+- Phase 4 non encore essayée sur le PC de Raphael.
+- Sauvegarde automatique provisoire (stockage local de l'application, une par seed) : pas encore de menu ni d'emplacements (phase 7). La zone de test n'est pas sauvegardée.
+- Pas d'arbre technologique (phase 7) : seuls l'établi et le feu de camp débloquent des recettes. Pas de qualité d'objets.
+- Graphismes provisoires pour toutes les pièces construites (remplaçables par manifeste).
+- Les toits ne s'effondrent pas si on démonte le mur qui les porte. Pas de murs à fenêtre, d'escaliers ni de coffres.
+- Le feu de camp n'éclaire pas encore (le jour/nuit arrive en phase 7) et ne cuit rien (pas de viande avant la phase 5).
 - Les blessures arrivent avec le combat (phase 5).
 - On ne peut pas encore récolter l'argile du sol.
 - Pas encore de rivières : seulement des lacs, des mers et des marais.
-- Le monde n'est pas encore sauvegardé sur disque (phase 7), seule la seed est retenue.
 - Pas de menu de création de monde (phase 7) : F9 et la seed par défaut le remplacent.
 - La grille de débogage (F6) est dessinée au niveau 0 : décalée sur les hauteurs.
 - Pas d'installateur (NSIS demande Wine pour être produit depuis Linux) ni d'icône personnalisée : la version est un dossier à extraire.

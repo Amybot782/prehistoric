@@ -400,6 +400,21 @@ export function itemIcon(shape, [a, b]) {
       pc.ellipse(8.5, 7, 6, 3.5, a);
       pc.set(6, 6, b); pc.set(10, 5, b);
       break;
+    case 'rope':
+      pc.ellipse(8, 9, 6, 4.5, (dx, dy) => (dx * dx + dy * dy < 0.3 ? null : a)); // a coil
+      for (let x = 3; x < 14; x += 2) pc.set(x, 6 + (x % 4 === 1 ? 1 : 0), b);
+      pc.rect(12, 11, 3, 1, b);
+      break;
+    case 'axe':
+    case 'pick':
+      for (let i = 0; i < 12; i++) pc.rect(3 + i, 14 - i, 2, 1, a);
+      if (shape === 'axe') {
+        pc.polygon([{ x: 9, y: 2 }, { x: 15, y: 4 }, { x: 13, y: 9 }, { x: 9, y: 6 }], b);
+      } else {
+        pc.polygon([{ x: 6, y: 3 }, { x: 12, y: 2 }, { x: 15, y: 7 }, { x: 13, y: 5 }, { x: 9, y: 5 }], b);
+      }
+      pc.rect(10, 5, 2, 2, '#c9b27a'); // binding
+      break;
     case 'cloth':
       pc.polygon([{ x: 2, y: 4 }, { x: 14, y: 4 }, { x: 12, y: 13 }, { x: 8, y: 11 }, { x: 4, y: 13 }], a);
       pc.rect(2, 4, 12, 2, b);
@@ -414,6 +429,197 @@ export function itemIcon(shape, [a, b]) {
 
 export const wallX = () => wall(true);
 export const wallY = () => wall(false);
+
+// ---- Built pieces (phase 4) ------------------------------------------------
+// Edge pieces (walls, doors) are drawn around the middle of a tile side, the
+// rest around the tile centre. WALL_H is the wall height in world units.
+const WALL_H = 1.5;
+
+/** Box from height z0 to z1 whose footprint centre is (cx, cy) relative to the anchor. */
+function box(pc, ax, ay, cx, cy, hw, hh, z0, z1, colors) {
+  const a = proj(ax, ay, cx, cy, z0);
+  isoBox(pc, a.x, a.y, hw, hh, z1 - z0, colors);
+}
+
+/** Same along a piece's own axis: `a` along it, `p` across it. */
+function edgeBox(pc, ax, ay, alongX, a, p, ha, hp, z0, z1, colors) {
+  if (alongX) box(pc, ax, ay, a, p, ha, hp, z0, z1, colors);
+  else box(pc, ax, ay, p, a, hp, ha, z0, z1, colors);
+}
+
+/** Flat diamond piece lying on a tile; `paint(x, y)` gets world coordinates in [-0.5, 0.5]. */
+function flatPiece(paint, size = 1) {
+  const pc = new PixelCanvas(TW, TH);
+  for (let py = 0; py < TH; py++) {
+    for (let px = 0; px < TW; px++) {
+      const a = (px + 0.5 - TW / 2) / (TW / 2);
+      const b = (py + 0.5 - TH / 2) / (TH / 2);
+      const x = (a + b) / 2, y = (b - a) / 2;
+      if (Math.abs(x) > size / 2 || Math.abs(y) > size / 2) continue;
+      const rim = Math.max(Math.abs(x), Math.abs(y)) > size / 2 - 0.06;
+      pc.set(px, py, paint(x, y, rim));
+    }
+  }
+  return { pc, originX: 0.5, originY: 0.5 };
+}
+
+export function woodFloor() {
+  return flatPiece((x, y, rim) => {
+    if (rim) return '#5a3e24';
+    const k = Math.floor((y + 0.5) * 4);
+    const along = (x + 0.5) * 2 + (k % 2) * 0.5;
+    if ((y + 0.5) * 4 - k < 0.12 || along % 1 < 0.06) return '#6b4a2b';
+    return ['#a87a4a', '#9a6c3e', '#b08250', '#946638'][k] ?? '#a87a4a';
+  });
+}
+
+export function stoneFloor() {
+  return flatPiece((x, y, rim) => {
+    if (rim) return '#4e4b45';
+    const ky = Math.floor((y + 0.5) * 3);
+    const u = (x + 0.5) * 2.5 + (ky % 2) * 0.5;
+    const kx = Math.floor(u);
+    if ((y + 0.5) * 3 - ky < 0.1 || u - kx < 0.07) return '#5e5a52';
+    const r = hash2(kx, ky, 71);
+    return r < 0.33 ? '#a09a8e' : r < 0.66 ? '#928c80' : '#aaa498';
+  });
+}
+
+function woodWall(alongX) {
+  const pc = new PixelCanvas(40, 46);
+  const ax = 20, ay = 38;
+  const hw = alongX ? 0.62 : 0.12, hh = alongX ? 0.12 : 0.62;
+  // Horizontal logs, five per wall. `foot(x)` is the screen row of the face's bottom at column x.
+  const logs = (base, foot) => (x, y) => {
+    const k = ((foot(x) - y) / HU / WALL_H) * 5;
+    return k % 1 < 0.18 ? shade(base, -0.35) : shade(base, Math.floor(k) % 2 ? -0.06 : 0.05);
+  };
+  const leftFoot = (x) => ay + ((x + 0.5 - ax) / (TW / 2) + 2 * hh) * (TH / 2);
+  const rightFoot = (x) => ay + (2 * hw - (x + 0.5 - ax) / (TW / 2)) * (TH / 2);
+  isoBox(pc, ax, ay, hw, hh, WALL_H, { top: '#c49a64', left: logs('#a0743f', leftFoot), right: logs('#8a6233', rightFoot) });
+  pc.outline('#2b1f12');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+function woodDoor(alongX, open) {
+  const pc = new PixelCanvas(40, 46);
+  const ax = 20, ay = 38;
+  const post = { top: '#b08a5a', left: '#7a5634', right: '#644528' };
+  const plank = { top: '#b88a52', left: (x) => (x % 3 === 0 ? '#6e4c2c' : '#9a6c3e'), right: (x) => (x % 3 === 0 ? '#5a3e24' : '#84592f') };
+  edgeBox(pc, ax, ay, alongX, -0.5, 0, 0.12, 0.14, 0, WALL_H, post);
+  if (open) edgeBox(pc, ax, ay, alongX, -0.34, 0.36, 0.04, 0.34, 0, WALL_H - 0.3, plank);
+  else edgeBox(pc, ax, ay, alongX, 0, 0, 0.38, 0.05, 0, WALL_H - 0.3, plank);
+  edgeBox(pc, ax, ay, alongX, 0.5, 0, 0.12, 0.14, 0, WALL_H, post);
+  edgeBox(pc, ax, ay, alongX, 0, 0, 0.62, 0.12, WALL_H - 0.3, WALL_H, post);
+  pc.outline('#2b1f12');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function thatchRoof() {
+  const pc = new PixelCanvas(42, 46);
+  const ax = 21, ay = 44; // the roof floats at wall height above its anchor
+  const straw = (x, y) => (hash2(x, y, 83) > 0.78 ? '#b89a4a' : (x + y) % 4 === 0 ? '#c9ab58' : '#d6b864');
+  box(pc, ax, ay, 0, 0, 0.62, 0.62, WALL_H, WALL_H + 0.22, { top: straw, left: '#9a7a34', right: '#7f6428' });
+  pc.outline('#3a2a10');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function workbench() {
+  const pc = new PixelCanvas(30, 28);
+  const ax = 15, ay = 20;
+  const leg = { top: '#6b4a2b', left: '#5a3e24', right: '#4a321c' };
+  for (const [x, y] of [[-0.28, -0.2], [0.28, -0.2], [-0.28, 0.2], [0.28, 0.2]]) box(pc, ax, ay, x, y, 0.05, 0.05, 0, 0.5, leg);
+  box(pc, ax, ay, 0, 0, 0.34, 0.26, 0.5, 0.62, { top: (x, y) => ((x + 2 * y) % 5 === 0 ? '#9a6c3e' : '#b88a52'), left: '#7a5634', right: '#644528' });
+  const top = proj(ax, ay, 0.05, -0.05, 0.62);
+  pc.ellipse(top.x - 3, top.y - 1, 2.5, 1.5, '#8d9099'); // a stone tool lying on it
+  pc.rect(top.x + 1, top.y - 1, 5, 1, '#6b4a2b');
+  pc.outline('#2b1f12');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function campfire() {
+  const pc = new PixelCanvas(26, 28);
+  const ax = 13, ay = 22;
+  const ring = [];
+  for (let i = 0; i < 8; i++) {
+    const ang = (i / 8) * Math.PI * 2;
+    ring.push(proj(ax, ay, Math.cos(ang) * 0.26, Math.sin(ang) * 0.26));
+  }
+  const stone = (p, i) => pc.ellipse(p.x, p.y - 1, 2.4, 1.7, i % 2 ? '#8d8f88' : '#a3a59c');
+  ring.forEach((p, i) => { if (p.y <= ay) stone(p, i); }); // stones behind the fire
+  for (const [x0, y0, x1, y1] of [[-0.2, 0, 0.2, 0], [0, -0.2, 0, 0.2]]) {
+    const a = proj(ax, ay, x0, y0, 0.06), b = proj(ax, ay, x1, y1, 0.06);
+    for (let t = 0; t <= 1; t += 0.05) pc.rect(Math.round(a.x + (b.x - a.x) * t) - 1, Math.round(a.y + (b.y - a.y) * t) - 1, 2, 2, '#5a3a20');
+  }
+  pc.polygon([{ x: ax - 5, y: ay - 2 }, { x: ax - 2, y: ay - 13 }, { x: ax, y: ay - 8 }, { x: ax + 2, y: ay - 16 }, { x: ax + 5, y: ay - 2 }], '#e8742a');
+  pc.polygon([{ x: ax - 3, y: ay - 2 }, { x: ax, y: ay - 10 }, { x: ax + 3, y: ay - 2 }], '#f8c84a');
+  ring.forEach((p, i) => { if (p.y > ay) stone(p, i); }); // stones in front
+  pc.outline('#21160d');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function torch() {
+  const pc = new PixelCanvas(10, 24);
+  const ax = 5, ay = 22;
+  pc.rect(ax - 1, ay - 14, 2, 14, '#7a5230');
+  pc.rect(ax - 1, ay - 15, 2, 2, '#c9b27a'); // fibre wrapping
+  pc.ellipse(ax, ay - 18, 2.6, 3.6, '#e8742a');
+  pc.ellipse(ax, ay - 17, 1.3, 2, '#f8d65a');
+  pc.outline('#21160d');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function fiberMat() {
+  return flatPiece((x, y, rim) => {
+    if (rim) return '#7a6a34';
+    const u = Math.floor((x + 0.5) * 8), v = Math.floor((y + 0.5) * 8);
+    return (u + v) % 2 ? '#b8a45a' : '#a08c46';
+  }, 0.8);
+}
+
+export function standingStone() {
+  const pc = new PixelCanvas(16, 34);
+  const ax = 8, ay = 31;
+  pc.polygon([{ x: ax - 5, y: ay }, { x: ax - 6, y: ay - 18 }, { x: ax - 3, y: ay - 28 }, { x: ax + 2, y: ay - 29 }, { x: ax + 5, y: ay - 20 }, { x: ax + 5, y: ay }], (x, y) => {
+    const n = hash2(x, y, 89);
+    if (x < ax - 2) return n > 0.8 ? '#8d8f88' : '#a3a59c';
+    return n > 0.85 ? '#5f605a' : x > ax + 2 ? '#6d6f68' : '#7c7e76';
+  });
+  pc.outline('#262724');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export const woodWallX = () => woodWall(true);
+export const woodWallY = () => woodWall(false);
+export const woodDoorX = () => woodDoor(true, false);
+export const woodDoorY = () => woodDoor(false, false);
+export const woodDoorXOpen = () => woodDoor(true, true);
+export const woodDoorYOpen = () => woodDoor(false, true);
+
+/** Inventory icon of a building piece: its world graphic, cropped and shrunk to 16x16. */
+export function pieceIcon(gen) {
+  const src = GENERATORS[gen]().pc;
+  let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < src.height; y++) {
+    for (let x = 0; x < src.width; x++) {
+      if (src.get(x, y) === 0) continue;
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+    }
+  }
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  const k = Math.min(1, 15 / w, 15 / h);
+  const pc = new PixelCanvas(16, 16);
+  const ox = Math.floor((16 - w * k) / 2), oy = Math.floor((16 - h * k) / 2);
+  for (let y = 0; y < Math.round(h * k); y++) {
+    for (let x = 0; x < Math.round(w * k); x++) {
+      const i = ((y0 + Math.floor(y / k)) * src.width + x0 + Math.floor(x / k)) * 4;
+      if (src.data[i + 3] === 0) continue;
+      const j = ((oy + y) * 16 + ox + x) * 4;
+      for (let c = 0; c < 4; c++) pc.data[j + c] = src.data[i + c];
+    }
+  }
+  return { pc, originX: 0.5, originY: 0.75 };
+}
 
 /**
  * Player sprite sheet: 5 drawn directions x 4 walk frames (16x26 each).
@@ -536,5 +742,20 @@ export const GENERATORS = {
   itemIcon,
   wallX,
   wallY,
+  woodFloor,
+  stoneFloor,
+  woodWallX,
+  woodWallY,
+  woodDoorX,
+  woodDoorY,
+  woodDoorXOpen,
+  woodDoorYOpen,
+  thatchRoof,
+  workbench,
+  campfire,
+  torch,
+  fiberMat,
+  standingStone,
+  pieceIcon,
   playerSheet,
 };

@@ -3,7 +3,7 @@
 Jeu de survie, de construction et de civilisation préhistorique en pixel art isométrique, pour PC Windows.
 JavaScript + Phaser 3 (moteur 2D) + Electron (application de bureau), entièrement local et hors ligne.
 
-**État actuel : phase 1 (fondations techniques) terminée, en attente de validation.**
+**État actuel : phases 1 à 3 validées, phase 4 (fabrication et construction) livrée, en attente de validation.**
 Voir [docs/SUIVI.md](docs/SUIVI.md) pour l'avancement et [docs/PHASE1_RAPPORT.md](docs/PHASE1_RAPPORT.md) pour le compte rendu.
 
 ## Lancer le jeu
@@ -55,6 +55,11 @@ npm run dist:win     :: produit release\win-unpacked\Prehistoric.exe
 | Utiliser l'objet choisi (manger, équiper) | F (ou clic droit sur l'emplacement) |
 | Poser au sol | G (Maj + G : toute la pile) |
 | Inventaire | I ou Tab |
+| Fabrication (menu des recettes) | C (Maj + clic : 5 d'un coup) |
+| Construire | choisir la pièce dans la barre rapide, viser avec la souris, clic gauche |
+| Tourner la pièce | R |
+| Ouvrir / fermer une porte | E |
+| Démonter une construction | X (elle revient dans l'inventaire) |
 | Zoom | Molette, `+` / `-`, `0` pour revenir au zoom par défaut |
 | Panneau de débogage | F3 |
 | Afficher les collisions | F4 |
