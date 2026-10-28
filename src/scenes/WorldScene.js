@@ -60,8 +60,9 @@ export class WorldScene extends Phaser.Scene {
 
     this.cameraCtl = new CameraController(this.cameras.main, gameCfg.camera);
     this.cameraCtl.onResize(this.scale.height);
-    this.playerView.update(1);
-    this.cameraCtl.snapTo(this.playerView.screen.x, this.playerView.screen.y);
+    this.snap = (v) => this.cameraCtl.snap(v);
+    this.playerView.update(1, this.snap);
+    this.cameraCtl.follow(this.playerView.screen.x, this.playerView.screen.y);
     this.scale.on('resize', (size) => this.cameraCtl.onResize(size.height));
     this.input.on('wheel', (_p, _o, _dx, dy) => this.cameraCtl.zoomBy(dy > 0 ? -1 : 1));
 
@@ -99,8 +100,8 @@ export class WorldScene extends Phaser.Scene {
     input.endFrame();
 
     // Rendering: interpolated between the last two simulation states.
-    this.playerView.update(this.clock.alpha);
-    this.cameraCtl.follow(this.playerView.screen.x, this.playerView.screen.y, delta / 1000);
+    this.playerView.update(this.clock.alpha, this.snap);
+    this.cameraCtl.follow(this.playerView.screen.x, this.playerView.screen.y);
     const view = this.cameras.main.worldView;
     this.propsView.update(view, {
       x: this.playerView.screen.x,
@@ -153,11 +154,32 @@ export class WorldScene extends Phaser.Scene {
     };
   }
 
+  /**
+   * Where the player sprite and one fixed prop land on the canvas, in whole
+   * device pixels, as the renderer draws them. Used to detect camera jitter.
+   */
+  renderProbe() {
+    const cam = this.cameras.main;
+    const z = cam.zoom;
+    const toScreen = (x, y) => ({
+      x: (x - cam.scrollX - cam.width * 0.5) * z + cam.width * 0.5,
+      y: (y - cam.scrollY - cam.height * 0.5) * z + cam.height * 0.5,
+    });
+    const prop = this.propsView.views[0].sprite;
+    return {
+      zoom: z,
+      player: toScreen(this.playerView.sprite.x, this.playerView.sprite.y),
+      playerIso: { x: this.playerView.screen.x * z, y: this.playerView.screen.y * z },
+      prop: toScreen(prop.x, prop.y),
+    };
+  }
+
   exposeDebugApi() {
     window.__PREHISTORIC__ = {
       state: () => this.getDebugState(),
       teleport: (x, y) => this.player.placeAt(x, y),
       logs: () => logger.entries.slice(-50),
+      renderProbe: () => this.renderProbe(),
     };
   }
 }

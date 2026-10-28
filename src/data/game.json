@@ -11,10 +11,8 @@
   },
   "camera": {
     "referenceHeight": 360,
-    "zoomStep": 0.5,
     "minZoomFactor": 0.5,
-    "maxZoomFactor": 2.5,
-    "followSharpness": 14
+    "maxZoomFactor": 2
   },
   "player": {
     "radius": 0.28,

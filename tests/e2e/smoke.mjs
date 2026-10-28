@@ -165,6 +165,38 @@ try {
   const pick = await state();
   check('Sélection de tuile à la souris', pick.mouse.tx === 24 && pick.mouse.ty === 24, `tuile (${pick.mouse.tx}, ${pick.mouse.ty})`);
 
+  // Camera stability: at the desktop window size, the character must stay on the
+  // same screen pixel while walking, and the scenery must never step backwards.
+  await page.setViewportSize({ width: 1600, height: 870 });
+  for (const keys of [['KeyD'], ['KeyS'], ['KeyD', 'KeyS'], ['KeyW', 'KeyA']]) {
+    await teleport(24.5, 24.5);
+    await page.waitForTimeout(300);
+    for (const k of keys) await page.keyboard.down(k);
+    await page.waitForTimeout(250);
+    const samples = await page.evaluate(() => new Promise((res) => {
+      const out = [];
+      const f = () => { out.push(window.__PREHISTORIC__.renderProbe()); if (out.length < 40) requestAnimationFrame(f); else res(out); };
+      requestAnimationFrame(f);
+    }));
+    for (const k of keys) await page.keyboard.up(k);
+    const spread = (arr) => Math.max(...arr) - Math.min(...arr);
+    const px = samples.map((p) => Math.round(p.player.x));
+    const py = samples.map((p) => Math.round(p.player.y));
+    // The scenery must move by exactly the opposite of the character's own
+    // movement, in whole pixels, on every frame (no wobble, no lag).
+    const mismatches = (axis) => samples.slice(1).filter((p, i) => {
+      const decor = Math.round(p.prop[axis]) - Math.round(samples[i].prop[axis]);
+      const self = Math.round(p.playerIso[axis]) - Math.round(samples[i].playerIso[axis]);
+      return decor !== -self;
+    }).length;
+    const moved = Math.round(samples.at(-1).playerIso.x - samples[0].playerIso.x) !== 0
+      || Math.round(samples.at(-1).playerIso.y - samples[0].playerIso.y) !== 0;
+    const ok = moved && spread(px) === 0 && spread(py) === 0 && mismatches('x') === 0 && mismatches('y') === 0
+      && Number.isInteger(samples[0].zoom);
+    check(`Caméra stable en marchant (${keys.join('+')})`, ok,
+      `zoom x${samples[0].zoom}, joueur ±${spread(px)}/${spread(py)} px, images incohérentes ${mismatches('x')}/${mismatches('y')}`);
+  }
+
   // HiDPI / 4K layout: base zoom follows window height.
   await page.setViewportSize({ width: 3840, height: 2160 });
   await page.waitForTimeout(400);

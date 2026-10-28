@@ -29,9 +29,15 @@ export class PlayerView {
     this._w = { x: 0, y: 0 };
   }
 
-  update(alpha) {
+  /**
+   * @param {number} alpha interpolation factor from the fixed-step clock
+   * @param {(v:number)=>number} [snap] rounds to the camera's screen-pixel grid
+   */
+  update(alpha, snap = (v) => v) {
     const w = this.player.interpolated(alpha, this._w);
     const s = this.proj.worldToScreen(w.x, w.y, this.player.z, this.screen);
+    s.x = snap(s.x);
+    s.y = snap(s.y);
     this.depth = this.computeDepth(w.x, w.y);
     this.sprite.setPosition(s.x, s.y).setDepth(this.depth);
     this.shadow.setPosition(s.x, s.y).setDepth(this.depth - 0.001);

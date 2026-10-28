@@ -1,23 +1,36 @@
 /**
- * Camera that follows a target in iso screen space with frame-rate
- * independent smoothing, and zooms in discrete steps around a base zoom
- * derived from the window height (so the game looks the same on 1080p and
- * 4K: 360 reference pixels -> x3 at 1080p, x6 at 2160p).
+ * Pixel-perfect camera.
+ *
+ * - Zoom is always a whole number, so every texel of the pixel art covers the
+ *   same number of screen pixels (a zoom of 2.5 makes texels alternate between
+ *   2 and 3 pixels, which shimmers when scrolling). The default zoom follows
+ *   the window height: 360 reference pixels -> x2 at 720p-900p, x3 at 1080p,
+ *   x4 at 1440p, x6 at 2160p (4K).
+ * - The camera is locked on the target, and both the target and the camera
+ *   scroll are snapped to the same screen-pixel grid. The character therefore
+ *   stays on exactly the same screen pixel while the world scrolls under it;
+ *   a smoothed (lagging) camera rounded independently from the character made
+ *   the image tremble while walking.
  */
 export class CameraController {
   constructor(camera, cfg) {
     this.camera = camera;
     this.cfg = cfg;
-    this.factor = 1;
+    this.offset = 0; // zoom steps added by the player (wheel, +/-)
     this.baseZoom = 1;
-    this.x = 0;
-    this.y = 0;
-    camera.roundPixels = true;
+    // Phaser only floors the scroll in world pixels when `roundPixels` is set,
+    // which is the wrong grid at zoom > 1. We snap the scroll ourselves and
+    // just ask the renderer to round vertices whenever the zoom is whole.
+    camera.roundPixels = false;
+    const preRender = camera.preRender.bind(camera);
+    camera.preRender = () => {
+      preRender();
+      camera.renderRoundPixels = Number.isInteger(camera.zoomX) && Number.isInteger(camera.zoomY);
+    };
   }
 
   computeBaseZoom(viewHeight) {
-    const raw = viewHeight / this.cfg.referenceHeight;
-    return Math.max(1, Math.round(raw * 2) / 2);
+    return Math.max(1, Math.floor(viewHeight / this.cfg.referenceHeight));
   }
 
   onResize(viewHeight) {
@@ -25,37 +38,45 @@ export class CameraController {
     this.apply();
   }
 
+  get minZoom() {
+    return Math.max(1, Math.floor(this.baseZoom * this.cfg.minZoomFactor));
+  }
+
+  get maxZoom() {
+    return Math.max(this.baseZoom + 1, Math.ceil(this.baseZoom * this.cfg.maxZoomFactor));
+  }
+
+  get zoom() {
+    return Math.min(this.maxZoom, Math.max(this.minZoom, this.baseZoom + this.offset));
+  }
+
   zoomBy(steps) {
-    const { zoomStep, minZoomFactor, maxZoomFactor } = this.cfg;
-    const next = this.factor + steps * zoomStep * (this.factor < 1 || (this.factor === 1 && steps < 0) ? 0.5 : 1);
-    this.factor = Math.min(maxZoomFactor, Math.max(minZoomFactor, Math.round(next * 4) / 4));
+    // Keep the offset within reach so zooming back is immediate after hitting a limit.
+    this.offset = this.zoom + steps - this.baseZoom;
+    this.offset = this.zoom - this.baseZoom;
     this.apply();
   }
 
   resetZoom() {
-    this.factor = 1;
+    this.offset = 0;
     this.apply();
-  }
-
-  get zoom() {
-    return this.baseZoom * this.factor;
   }
 
   apply() {
     this.camera.setZoom(this.zoom);
   }
 
-  snapTo(sx, sy) {
-    this.x = sx;
-    this.y = sy;
-    this.camera.centerOn(sx, sy);
+  /** Rounds a coordinate (iso screen space) to the current screen-pixel grid. */
+  snap(v) {
+    const z = this.zoom;
+    return Math.round(v * z) / z;
   }
 
-  /** Smoothly follows (sx, sy); `dtSeconds` is the real frame time. */
-  follow(sx, sy, dtSeconds) {
-    const k = 1 - Math.exp(-dtSeconds * this.cfg.followSharpness);
-    this.x += (sx - this.x) * k;
-    this.y += (sy - this.y) * k;
-    this.camera.centerOn(this.x, this.y);
+  /** Centres the camera on (sx, sy); pass values already snapped with `snap`. */
+  follow(sx, sy) {
+    const cam = this.camera;
+    cam.centerOn(sx, sy);
+    cam.scrollX = this.snap(cam.scrollX);
+    cam.scrollY = this.snap(cam.scrollY);
   }
 }

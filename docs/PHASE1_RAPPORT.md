@@ -13,7 +13,7 @@
 - **Déplacements** : ZQSD sur AZERTY et WASD sur QWERTY avec la même configuration (touches physiques), flèches, course avec Maj, accélération et freinage courts, diagonale à la même vitesse, personnage orienté sur 8 directions avec animation de marche calée sur la distance parcourue.
 - **Collisions de base** : calculées dans le monde logique (cercles pour les troncs et rochers, rectangles pour murs, blocs et eau), découpage en sous-pas pour ne jamais traverser un mur, glissement le long des obstacles, bords de carte infranchissables.
 - **Tri de profondeur** : par empreinte au sol, corrigé dynamiquement près des murs fins ; un objet qui cache le joueur devient translucide.
-- **Caméra** : suit le joueur avec un lissage indépendant des FPS, zoom molette ou `+`/`-`/`0`, zoom de base adapté à la hauteur de fenêtre (x2 en 720p, x3 en 1080p, x6 en 4K).
+- **Caméra** : suit le joueur avec un lissage indépendant des FPS, zoom molette ou `+`/`-`/`0`, zoom de base adapté à la hauteur de fenêtre (x2 de 720p à 1079p, x3 en 1080p, x4 en 1440p, x6 en 4K).
 - **Outils de débogage** : panneau F3 (FPS, tick, positions monde/écran, tuile, souris, vitesse, zoom, compteurs), affichage des collisions F4, grille F6, journal en mémoire et fichier `%APPDATA%\Prehistoric\logs\`, capture des erreurs non gérées.
 - **Structure des assets** : dossiers personnages, villageois, dinosaures, animaux, bâtiments, végétation, terrains, interface, animations, effets, sons, musiques ; manifeste qui permet de remplacer chaque graphisme provisoire par un vrai fichier (voir `docs/ASSETS.md`).
 
@@ -74,3 +74,13 @@
 5. Marcher vers l'étang (à l'ouest) : arrêt sur le sable.
 6. Zoomer à la molette, puis `0` pour revenir au zoom par défaut ; F11 pour le plein écran.
 7. Ouvrir `%APPDATA%\Prehistoric\logs\` et vérifier qu'un journal a été écrit.
+
+## Correctif 0.1.1 — tremblement pendant la marche
+
+**Signalé par Raphael sur Windows :** l'image semblait trembler pendant la marche.
+
+**Cause trouvée :** dans la fenêtre de l'application (environ 1600×870), le zoom de base valait 2,5. À un zoom non entier, les pixels du pixel art n'ont pas tous la même taille et scintillent au défilement. De plus, la caméra suivait le personnage avec un léger retard, et l'arrondi de la caméra et celui du personnage étaient calculés séparément. Le personnage oscillait donc jusqu'à 12 pixels à l'écran (mesuré).
+
+**Correction :** zoom toujours entier (x2 dans la fenêtre par défaut, x3 en 1080p plein écran, x6 en 4K), caméra calée sur le personnage, et personnage et caméra arrondis sur la même grille de pixels.
+
+**Vérifié :** 4 nouvelles vérifications de bout en bout à 1600×870 (droite, bas, diagonale, haut-gauche). Le personnage ne bouge plus d'un seul pixel à l'écran, et le décor se déplace exactement à l'opposé du personnage à chaque image. Reste à confirmer sur ton PC.

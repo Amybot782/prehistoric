@@ -4,7 +4,8 @@
 
 | Version | Date | Contenu | Statut |
 |---|---|---|---|
-| 0.1.0 | 2026-10-28 | Phase 1 — Fondations techniques | En attente de validation |
+| 0.1.1 | 2026-10-28 | Correction du tremblement de l'image pendant la marche (zoom entier, caméra calée au pixel sur le joueur) | En attente de validation |
+| 0.1.0 | 2026-10-28 | Phase 1 — Fondations techniques | Lancée par Raphael sur Windows ; tremblement signalé |
 
 ## Fonctionnalités terminées (testées)
 
@@ -16,11 +17,11 @@
 - Déplacements ZQSD/WASD/flèches orientés à l'écran, course (Maj), vitesse diagonale normalisée, 8 orientations.
 - Collisions logiques (cercles/rectangles), anti-traversée, glissement le long des murs, eau infranchissable.
 - Tri de profondeur par empreinte au sol, corrigé près des murs fins ; objets devant le joueur rendus translucides.
-- Caméra qui suit le joueur, zoom molette et clavier, zoom de base adapté à la résolution (jusqu'au 4K).
+- Caméra calée au pixel près sur le joueur, zoom entier (molette et clavier), zoom de base adapté à la résolution (jusqu'au 4K).
 - Outils de débogage : panneau F3, collisions F4, grille F6, journal en mémoire et sur disque.
 - Assets remplaçables par manifeste, graphismes provisoires générés, repli automatique si un fichier manque.
 - Carte de test de 48×48 tuiles (forêt, étang, chemin, enclos avec porte, passages étroits).
-- 45 tests unitaires et 14 vérifications de bout en bout dans Chromium.
+- 45 tests unitaires et 18 vérifications de bout en bout dans Chromium (dont la stabilité de la caméra en marchant).
 
 ## Fonctionnalités en cours
 
@@ -37,7 +38,7 @@
 
 ## Bugs connus et limitations
 
-- L'exécutable Windows n'a pas encore été lancé sur une vraie machine Windows.
+- 0.1.0 s'ouvre sur Windows (confirmé par Raphael) ; la correction 0.1.1 reste à confirmer sur son PC.
 - Pas d'installateur (NSIS demande Wine pour être produit depuis Linux) ni d'icône personnalisée : la version est un dossier à extraire.
 - Les performances n'ont pas été mesurées sur un vrai PC (seulement en rendu logiciel dans un conteneur).
 - Les angles de l'enclos de test ne sont pas raccordés visuellement (pièces de mur provisoires).
