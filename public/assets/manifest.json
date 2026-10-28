@@ -14,27 +14,27 @@
       "originY": 0.5
     },
     "tile_clay_0": {
-      "file": "assets/terrain/clay_0.png",
+      "file": "assets/terrain/claude_clay_0.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_clay_1": {
-      "file": "assets/terrain/clay_1.png",
+      "file": "assets/terrain/claude_clay_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_clay_2": {
-      "file": "assets/terrain/clay_2.png",
+      "file": "assets/terrain/claude_clay_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "face_clay_left": {
-      "file": "assets/terrain/clay_left.png",
+      "file": "assets/terrain/claude_clay_left.png",
       "originX": 1,
       "originY": 0
     },
     "face_clay_right": {
-      "file": "assets/terrain/clay_right.png",
+      "file": "assets/terrain/claude_clay_right.png",
       "originX": 0,
       "originY": 0
     },
@@ -54,37 +54,37 @@
       "originY": 0.5
     },
     "face_dirt_left": {
-      "file": "assets/terrain/dirt_left.png",
+      "file": "assets/terrain/claude_dirt_left.png",
       "originX": 1,
       "originY": 0
     },
     "face_dirt_right": {
-      "file": "assets/terrain/dirt_right.png",
+      "file": "assets/terrain/claude_dirt_right.png",
       "originX": 0,
       "originY": 0
     },
     "tile_forest_floor_0": {
-      "file": "assets/terrain/forest_floor_0.png",
+      "file": "assets/terrain/claude_forest_floor_0.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_forest_floor_1": {
-      "file": "assets/terrain/forest_floor_1.png",
+      "file": "assets/terrain/claude_forest_floor_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_forest_floor_2": {
-      "file": "assets/terrain/forest_floor_2.png",
+      "file": "assets/terrain/claude_forest_floor_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "face_forest_floor_left": {
-      "file": "assets/terrain/forest_floor_left.png",
+      "file": "assets/terrain/claude_forest_floor_left.png",
       "originX": 1,
       "originY": 0
     },
     "face_forest_floor_right": {
-      "file": "assets/terrain/forest_floor_right.png",
+      "file": "assets/terrain/claude_forest_floor_right.png",
       "originX": 0,
       "originY": 0
     },
@@ -99,52 +99,52 @@
       "originY": 0.5
     },
     "face_grass_left": {
-      "file": "assets/terrain/grass_left.png",
+      "file": "assets/terrain/claude_grass_left.png",
       "originX": 1,
       "originY": 0
     },
     "face_grass_right": {
-      "file": "assets/terrain/grass_right.png",
+      "file": "assets/terrain/claude_grass_right.png",
       "originX": 0,
       "originY": 0
     },
     "tile_gravel_0": {
-      "file": "assets/terrain/gravel_0.png",
+      "file": "assets/terrain/claude_gravel_0.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_gravel_1": {
-      "file": "assets/terrain/gravel_1.png",
+      "file": "assets/terrain/claude_gravel_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_gravel_2": {
-      "file": "assets/terrain/gravel_2.png",
+      "file": "assets/terrain/claude_gravel_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "face_gravel_left": {
-      "file": "assets/terrain/gravel_left.png",
+      "file": "assets/terrain/claude_gravel_left.png",
       "originX": 1,
       "originY": 0
     },
     "face_gravel_right": {
-      "file": "assets/terrain/gravel_right.png",
+      "file": "assets/terrain/claude_gravel_right.png",
       "originX": 0,
       "originY": 0
     },
     "tile_shallow_water_0": {
-      "file": "assets/terrain/shallow_water_0.png",
+      "file": "assets/terrain/claude_shallow_water_0.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_shallow_water_1": {
-      "file": "assets/terrain/shallow_water_1.png",
+      "file": "assets/terrain/claude_shallow_water_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_shallow_water_2": {
-      "file": "assets/terrain/shallow_water_2.png",
+      "file": "assets/terrain/claude_shallow_water_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -164,27 +164,27 @@
       "originY": 0.5
     },
     "face_stone_left": {
-      "file": "assets/terrain/stone_left.png",
+      "file": "assets/terrain/claude_stone_left.png",
       "originX": 1,
       "originY": 0
     },
     "face_stone_right": {
-      "file": "assets/terrain/stone_right.png",
+      "file": "assets/terrain/claude_stone_right.png",
       "originX": 0,
       "originY": 0
     },
     "tile_water_0": {
-      "file": "assets/terrain/water_0.png",
+      "file": "assets/terrain/claude_water_0.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_water_1": {
-      "file": "assets/terrain/water_1.png",
+      "file": "assets/terrain/claude_water_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_water_2": {
-      "file": "assets/terrain/water_2.png",
+      "file": "assets/terrain/claude_water_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -195,21 +195,6 @@
     },
     "tile_grass_4": {
       "file": "assets/terrain/claude_herbe_5.png",
-      "originX": 0.5,
-      "originY": 0.5
-    },
-    "tile_grass_5": {
-      "file": "assets/terrain/grass_5.png",
-      "originX": 0.5,
-      "originY": 0.5
-    },
-    "tile_grass_6": {
-      "file": "assets/terrain/grass_6.png",
-      "originX": 0.5,
-      "originY": 0.5
-    },
-    "tile_grass_7": {
-      "file": "assets/terrain/grass_7.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -237,6 +222,101 @@
       "file": "assets/terrain/claude_pierre_6.png",
       "originX": 0.5,
       "originY": 0.5
+    },
+    "tile_swamp_grass_0": {
+      "file": "assets/terrain/claude_swamp_grass_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_swamp_grass_1": {
+      "file": "assets/terrain/claude_swamp_grass_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_swamp_grass_2": {
+      "file": "assets/terrain/claude_swamp_grass_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_sand_0": {
+      "file": "assets/terrain/claude_sand_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_sand_1": {
+      "file": "assets/terrain/claude_sand_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_sand_2": {
+      "file": "assets/terrain/claude_sand_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_mud_0": {
+      "file": "assets/terrain/claude_mud_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_mud_1": {
+      "file": "assets/terrain/claude_mud_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_mud_2": {
+      "file": "assets/terrain/claude_mud_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_swamp_grass_left": {
+      "file": "assets/terrain/claude_swamp_grass_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_swamp_grass_right": {
+      "file": "assets/terrain/claude_swamp_grass_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "face_sand_left": {
+      "file": "assets/terrain/claude_sand_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_sand_right": {
+      "file": "assets/terrain/claude_sand_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "face_mud_left": {
+      "file": "assets/terrain/claude_mud_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_mud_right": {
+      "file": "assets/terrain/claude_mud_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "face_water_left": {
+      "file": "assets/terrain/claude_water_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_water_right": {
+      "file": "assets/terrain/claude_water_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "face_shallow_water_left": {
+      "file": "assets/terrain/claude_shallow_water_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_shallow_water_right": {
+      "file": "assets/terrain/claude_shallow_water_right.png",
+      "originX": 0,
+      "originY": 0
     }
   }
 }
