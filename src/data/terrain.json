@@ -1,7 +1,7 @@
 {
   "_comment": "Types de sol. Les identifiants ne doivent jamais changer (ils sont sauvegardés). 'solid' bloque les déplacements. 'variants' (facultatif) : fréquence de chaque variante de tuile, 3 variantes égales par défaut. 'face' : couleurs des parois quand le sol est surélevé. 'minimap' : couleur sur la mini-carte.",
   "types": [
-    { "id": 0, "key": "grass", "solid": false, "variants": [3, 3, 3, 1, 1, 1, 4, 0.5], "colors": ["#5d8a3a", "#679641", "#527d33"], "face": ["#7a5a38", "#5f452a"], "minimap": "#5f8d3c" },
+    { "id": 0, "key": "grass", "solid": false, "variants": [1, 1, 1, 0.5, 0.8, 0.8, 24, 0.3], "colors": ["#5d8a3a", "#679641", "#527d33"], "face": ["#7a5a38", "#5f452a"], "minimap": "#5f8d3c" },
     { "id": 1, "key": "dirt", "solid": false, "colors": ["#8a6a43", "#94744b", "#7d603c"], "face": ["#6f5335", "#584128"], "minimap": "#8a6a43" },
     { "id": 2, "key": "sand", "solid": false, "colors": ["#d8c27a", "#e0cb86", "#cdb66f"], "face": ["#b89f5f", "#9c844c"], "minimap": "#d8c27a" },
     { "id": 3, "key": "water", "solid": true, "colors": ["#2f6f9e", "#3779a8", "#2a6591"], "face": ["#245a80", "#1d4a6a"], "minimap": "#2d6a98" },
