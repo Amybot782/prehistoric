@@ -3,14 +3,15 @@ import { buildCatalog, generatePlaceholder } from '../../src/assets/assetCatalog
 import { FACING_FRAMES } from '../../src/assets/placeholders.js';
 import terrain from '../../src/data/terrain.json';
 import props from '../../src/data/props.json';
+import items from '../../src/data/items.json';
 
 describe('catalogue d’assets', () => {
-  const catalog = buildCatalog(terrain.types);
+  const catalog = buildCatalog(terrain.types, items);
 
   it('chaque objet du décor a une texture déclarée', () => {
     const keys = new Set(catalog.map((e) => e.key));
     for (const [name, def] of Object.entries(props)) {
-      if (name.startsWith('_')) continue;
+      if (name.startsWith('_') || name === 'dropped') continue; // dropped items use their item icon
       expect(keys.has(def.texture), def.texture).toBe(true);
     }
   });

@@ -3,6 +3,7 @@ import { buildCatalog, generatePlaceholder } from '../assets/assetCatalog.js';
 import { logger } from '../core/Logger.js';
 import { t } from '../i18n/index.js';
 import terrain from '../data/terrain.json';
+import items from '../data/items.json';
 
 const log = logger.scope('assets');
 
@@ -26,7 +27,7 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     const manifest = this.cache.json.get('manifest') ?? { overrides: {} };
-    this.catalog = buildCatalog(terrain.types);
+    this.catalog = buildCatalog(terrain.types, items);
     this.origins = {};
     this.failed = new Set();
     const overrides = manifest.overrides ?? {};

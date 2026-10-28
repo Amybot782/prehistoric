@@ -11,7 +11,9 @@ import { ChunkDeltaStore } from './chunks/ChunkDeltaStore.js';
  * applies the player's modifications from the delta store, and registers its
  * colliders; unloading removes everything but keeps the modifications.
  * Renderers and the minimap listen to `chunk:loaded` / `chunk:unloaded` /
- * `prop:removed` on `events` and never reach into the generator.
+ * `prop:added` / `prop:removed` / `prop:damaged` on `events` and never
+ * reach into the generator. Harvested objects leave a stump when their
+ * definition says so and grow back after `regrowSeconds` of world time.
  *
  * Chunk coordinates are integers: chunk (cx, cy) covers tiles
  * [cx*size, cx*size+size) x [cy*size, cy*size+size).
@@ -34,6 +36,7 @@ export class ChunkedWorld {
     this.chunks = new Map();
     this.entities = [];
     this.stats = { generated: 0, unloaded: 0, lastGenMs: 0 };
+    this.time = 0; // world time in seconds, advanced by the simulation (regrowth)
   }
 
   // ---- Queries -------------------------------------------------------------
@@ -125,15 +128,47 @@ export class ChunkedWorld {
     const key = chunkKey(cx, cy);
     if (this.chunks.has(key)) return this.chunks.get(key);
     const t0 = now();
-    const data = this.deltas.apply(key, this.generator.generateChunk(cx, cy));
-    const chunk = { key, cx, cy, ground: data.ground, height: data.height, biome: data.biome, props: [], colliders: [] };
-    for (const p of data.props) this._addProp(chunk, p);
+    const data = this.deltas.applyTiles(key, this.generator.generateChunk(cx, cy));
+    const chunk = {
+      key, cx, cy, ground: data.ground, height: data.height, biome: data.biome,
+      props: [], colliders: [], removed: new Map(),
+    };
+    for (const p of data.props) {
+      const at = this.deltas.removedAt(key, p.id);
+      if (at === undefined) {
+        this._addProp(chunk, p);
+      } else if (this._regrowDue(p.type, at)) {
+        this.deltas.restoreProp(key, p.id);
+        this._addProp(chunk, p);
+      } else {
+        this._keepRemoved(chunk, p, at);
+      }
+    }
+    for (const [id, e] of this.deltas.dropped(key)) this._addProp(chunk, this._droppedData(id, e));
     this._addTerrainColliders(chunk);
     this.chunks.set(key, chunk);
     this.stats.generated++;
     this.stats.lastGenMs = now() - t0;
     this.events.emit('chunk:loaded', chunk);
     return chunk;
+  }
+
+  _regrowDue(type, removedAt) {
+    const s = this.propDefs[type]?.regrowSeconds;
+    return s !== undefined && this.time - removedAt >= s;
+  }
+
+  /** Remembers a harvested object (for regrowth) and puts its stump, if any. */
+  _keepRemoved(chunk, raw, at) {
+    chunk.removed.set(raw.id, { raw, at });
+    const stump = this.propDefs[raw.type]?.stump;
+    if (stump) return this._addProp(chunk, { ...raw, id: `${raw.id}_stump`, type: stump, stumpOf: raw.id });
+    return null;
+  }
+
+  _droppedData(id, e) {
+    const tx = Math.floor(e.x), ty = Math.floor(e.y);
+    return { id, type: 'dropped', tx, ty, x: e.x, y: e.y, h: this.heightAt(tx, ty), item: e.item, count: e.count, texture: `item_${e.item}` };
   }
 
   unloadChunk(cx, cy) {
@@ -150,7 +185,8 @@ export class ChunkedWorld {
   _addProp(chunk, p) {
     const def = this.propDefs[p.type];
     if (!def) throw new Error(`Type d'objet inconnu : ${p.type}`);
-    const prop = { ...p, def, chunk: chunk.key, z: (p.h ?? 0) * this.levelHeight, collider: null };
+    const prop = { ...p, def, chunk: chunk.key, z: (p.h ?? 0) * this.levelHeight, collider: null, hpLeft: 0 };
+    if (def.harvest) prop.hpLeft = this.deltas.hpLeft(chunk.key, p.id) ?? def.harvest.hp;
     if (def.collider) {
       const c = def.collider;
       const shape = c.type === 'circle' ? circle(prop.x, prop.y, c.r) : aabb(prop.x - c.hw, prop.y - c.hh, prop.x + c.hw, prop.y + c.hh);
@@ -158,6 +194,23 @@ export class ChunkedWorld {
     }
     chunk.props.push(prop);
     return prop;
+  }
+
+  /** Loaded objects whose centre is within `r` tiles of (x, y). */
+  propsNear(x, y, r, out = []) {
+    out.length = 0;
+    const n = this.size;
+    const cx0 = Math.floor((x - r) / n), cx1 = Math.floor((x + r) / n);
+    const cy0 = Math.floor((y - r) / n), cy1 = Math.floor((y + r) / n);
+    const r2 = r * r;
+    for (let cy = cy0; cy <= cy1; cy++) {
+      for (let cx = cx0; cx <= cx1; cx++) {
+        const c = this.chunks.get(chunkKey(cx, cy));
+        if (!c) continue;
+        for (const p of c.props) if ((p.x - x) ** 2 + (p.y - y) ** 2 <= r2) out.push(p);
+      }
+    }
+    return out;
   }
 
   /** Solid ground (deep water) as one rectangle per horizontal run of tiles. */
@@ -182,17 +235,81 @@ export class ChunkedWorld {
 
   // ---- Modifications -------------------------------------------------------
 
-  /** Removes an object for good (until regrowth); persists across reloads. */
-  removeProp(prop, time = 0) {
+  /**
+   * Removes an object (harvested, picked up). Generated objects are recorded
+   * with the time so they can grow back; dropped items are simply forgotten.
+   */
+  removeProp(prop, time = this.time) {
     const chunk = this.chunks.get(prop.chunk);
     if (!chunk) return false;
     const i = chunk.props.indexOf(prop);
     if (i < 0) return false;
     chunk.props.splice(i, 1);
     if (prop.collider) this.collisions.removeStatic(prop.collider);
-    this.deltas.removeProp(chunk.key, prop.id, time);
     this.events.emit('prop:removed', prop);
+    if (prop.type === 'dropped') {
+      this.deltas.removeDropped(chunk.key, prop.id);
+    } else if (prop.stumpOf === undefined) {
+      this.deltas.removeProp(chunk.key, prop.id, time);
+      const raw = { id: prop.id, type: prop.type, tx: prop.tx, ty: prop.ty, x: prop.x, y: prop.y, h: prop.h };
+      const stump = this._keepRemoved(chunk, raw, time);
+      if (stump) this.events.emit('prop:added', stump);
+    }
     return true;
+  }
+
+  /** Stores the harvest points left on a partly harvested object. */
+  damageProp(prop, hpLeft) {
+    prop.hpLeft = hpLeft;
+    if (prop.type === 'dropped') return;
+    this.deltas.setDamage(prop.chunk, prop.id, hpLeft);
+    this.events.emit('prop:damaged', prop);
+  }
+
+  /** Puts an item stack on the ground (its chunk must be loaded). */
+  dropItem(item, count, x, y) {
+    const chunk = this.chunkOf(Math.floor(x), Math.floor(y));
+    if (!chunk || count <= 0) return null;
+    const id = this.deltas.addDropped(chunk.key, { item, count, x, y });
+    const prop = this._addProp(chunk, this._droppedData(id, { item, count, x, y }));
+    this.events.emit('prop:added', prop);
+    return prop;
+  }
+
+  /** Changes the size of a dropped stack (partial pick-up). */
+  setDroppedCount(prop, count) {
+    prop.count = count;
+    this.deltas.updateDropped(prop.chunk, prop.id, count);
+  }
+
+  /** Grows back harvested objects of loaded chunks whose delay has passed. */
+  updateRegrowth() {
+    let grown = 0;
+    for (const chunk of this.chunks.values()) {
+      if (!chunk.removed.size) continue;
+      for (const [id, { raw, at }] of chunk.removed) {
+        if (!this._regrowDue(raw.type, at)) continue;
+        if (this._blocked(raw)) continue; // something stands there: try later
+        chunk.removed.delete(id);
+        this.deltas.restoreProp(chunk.key, id);
+        const stump = chunk.props.find((p) => p.stumpOf === id);
+        if (stump) {
+          chunk.props.splice(chunk.props.indexOf(stump), 1);
+          this.events.emit('prop:removed', stump);
+        }
+        this.events.emit('prop:added', this._addProp(chunk, raw));
+        grown++;
+      }
+    }
+    return grown;
+  }
+
+  /** True when an entity overlaps where a solid object would grow back. */
+  _blocked(raw) {
+    const c = this.propDefs[raw.type]?.collider;
+    if (!c) return false;
+    const r = c.type === 'circle' ? c.r : Math.max(c.hw, c.hh);
+    return this.entities.some((e) => Math.hypot(e.x - raw.x, e.y - raw.y) < r + e.radius);
   }
 
   /** Changes a ground tile (loaded chunks only); persists across reloads. */

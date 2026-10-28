@@ -1,0 +1,14 @@
+{
+  "_comment": "Objets d'inventaire. 'stack' : quantité maximale par emplacement. 'food' : effets quand on mange. 'equip' : emplacement ('hand' ou 'body'). 'tool' : multiplicateur de récolte par type ('wood', 'stone', 'plant'). 'insulation' : degrés gagnés contre le froid. 'icon' : forme et couleurs du graphisme provisoire.",
+  "wood": { "category": "material", "stack": 50, "icon": { "shape": "log", "colors": ["#8a5a32", "#c49a64"] } },
+  "stick": { "category": "material", "stack": 30, "icon": { "shape": "stick", "colors": ["#7a5230", "#5a3a20"] } },
+  "stone": { "category": "material", "stack": 50, "equip": "hand", "tool": { "stone": 1.6, "wood": 1.15, "plant": 1 }, "icon": { "shape": "stone", "colors": ["#a3a59c", "#6d6f68"] } },
+  "flint": { "category": "material", "stack": 30, "equip": "hand", "tool": { "wood": 1.6, "plant": 1.5, "stone": 1.1 }, "icon": { "shape": "flint", "colors": ["#4b4f57", "#9aa3b0"] } },
+  "fiber": { "category": "material", "stack": 50, "icon": { "shape": "fiber", "colors": ["#a8c45a", "#6d9a3a"] } },
+  "reed": { "category": "material", "stack": 50, "icon": { "shape": "reed", "colors": ["#7d8f45", "#6b4a2b"] } },
+  "resin": { "category": "material", "stack": 20, "icon": { "shape": "drop", "colors": ["#d99a2b", "#8a5a12"] } },
+  "clay": { "category": "material", "stack": 30, "icon": { "shape": "lump", "colors": ["#b06f4c", "#7d4a30"] } },
+  "berries": { "category": "food", "stack": 20, "food": { "hunger": 6, "thirst": 2 }, "icon": { "shape": "berries", "colors": ["#c93a3a", "#5a3a8f"] } },
+  "mushroom": { "category": "food", "stack": 20, "food": { "hunger": 10, "thirst": 0 }, "icon": { "shape": "mushroom", "colors": ["#c9a47a", "#f0e2c8"] } },
+  "loincloth": { "category": "clothing", "stack": 1, "equip": "body", "insulation": 3, "icon": { "shape": "cloth", "colors": ["#9a6b42", "#6e4a2a"] } }
+}

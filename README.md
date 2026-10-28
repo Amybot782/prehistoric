@@ -49,7 +49,12 @@ npm run dist:win     :: produit release\win-unpacked\Prehistoric.exe
 | Action | Touches |
 |---|---|
 | Se déplacer | ZQSD (AZERTY) ou WASD (QWERTY), ou flèches |
-| Courir | Maj |
+| Courir | Maj (consomme l'endurance) |
+| Récolter, ramasser, boire | E maintenu, ou clic gauche sur l'objet |
+| Choisir un emplacement de la barre rapide | 1 à 8 (ou clic) |
+| Utiliser l'objet choisi (manger, équiper) | F (ou clic droit sur l'emplacement) |
+| Poser au sol | G (Maj + G : toute la pile) |
+| Inventaire | I ou Tab |
 | Zoom | Molette, `+` / `-`, `0` pour revenir au zoom par défaut |
 | Panneau de débogage | F3 |
 | Afficher les collisions | F4 |

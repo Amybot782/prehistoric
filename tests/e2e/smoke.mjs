@@ -157,6 +157,132 @@ try {
     `hauteur ${high.tile.height}, z=${high.player.z.toFixed(2)} à x=${high.player.x.toFixed(2)}`);
   await page.screenshot({ path: join(shots, '03b-plateau.png') });
 
+  // ---- Phase 3: survival loop (test area) -----------------------------------
+  const api = (f, ...a) => page.evaluate(([f, a]) => window.__PREHISTORIC__[f](...a), [f, a]);
+  const sv = async () => (await state()).survival;
+  const s0 = await sv();
+  check('Départ : besoins pleins et vêtements équipés', s0.health === 100 && s0.equipment.body === 'loincloth' && s0.hunger > 80,
+    `santé ${s0.health}, faim ${s0.hunger.toFixed(0)}, soif ${s0.thirst.toFixed(0)}, corps ${s0.equipment.body}`);
+
+  // Cut a tree with E held: wood in the inventory, stump left behind.
+  const tree = (await api('propsNear', 24.5, 24.5, 9)).find((p) => p.type === 'tree');
+  await teleport(tree.x - 0.7, tree.y);
+  await api('face', 1, 0);
+  await page.waitForTimeout(200);
+  const aimed = (await sv()).target;
+  await page.keyboard.down('KeyE');
+  for (let i = 0; i < 40; i++) {
+    await page.waitForTimeout(150);
+    if (!(await api('propsNear', tree.x, tree.y, 0.1)).some((p) => p.id === tree.id)) break;
+  }
+  await page.keyboard.up('KeyE');
+  await page.waitForTimeout(300);
+  const afterCut = await sv();
+  const around = await api('propsNear', tree.x, tree.y, 0.1);
+  check('Abattre un arbre (E maintenu)', aimed?.id === tree.id && afterCut.items.wood >= 6 && around.some((p) => p.type === 'stump') && !around.some((p) => p.id === tree.id),
+    `bois ${afterCut.items.wood ?? 0}, souche ${around.some((p) => p.type === 'stump')}`);
+  await page.screenshot({ path: join(shots, '10-arbre-abattu.png') });
+
+  // Regrowth after its delay.
+  await api('advanceTime', 1000);
+  await page.waitForTimeout(200);
+  check('L’arbre repousse après le délai', (await api('propsNear', tree.x, tree.y, 0.1)).some((p) => p.id === tree.id));
+
+  // Drink at the pond.
+  await api('setVital', 'thirst', 30);
+  await teleport(17.4, 30.6);
+  await api('face', -1, 0);
+  await page.waitForTimeout(200);
+  await page.keyboard.press('KeyE');
+  await page.waitForTimeout(200);
+  const drank = await sv();
+  check('Boire à l’étang', drank.thirst > 40, `soif ${drank.thirst.toFixed(1)}`);
+
+  // Eat berries from the quick bar with F.
+  const slotOf = (st, item) => st.slots.findIndex((x) => x?.[0] === item);
+  await api('give', 'berries', 3);
+  await api('setVital', 'hunger', 40);
+  const bi = slotOf(await sv(), 'berries');
+  await page.keyboard.press(`Digit${bi + 1}`);
+  await page.keyboard.press('KeyF');
+  await page.waitForTimeout(200);
+  const ate = await sv();
+  check('Manger des baies (touche F)', bi >= 0 && bi < 8 && ate.hunger > 40 && ate.items.berries === 2, `faim ${ate.hunger.toFixed(1)}, baies ${ate.items.berries}`);
+
+  // Inventory panel: move a stack with two clicks, equip flint with a right click.
+  await api('give', 'flint', 1);
+  await page.keyboard.press('KeyI');
+  await page.waitForTimeout(200);
+  const st1 = await sv();
+  const from = slotOf(st1, 'wood');
+  const a = await api('hudSlot', 'inv', from);
+  const b = await api('hudSlot', 'inv', 20);
+  await page.mouse.click(a.x, a.y);
+  await page.mouse.click(b.x, b.y);
+  await page.waitForTimeout(150);
+  const st2 = await sv();
+  const fi = slotOf(st2, 'flint');
+  const f = await api('hudSlot', 'inv', fi);
+  await page.mouse.click(f.x, f.y, { button: 'right' });
+  await page.waitForTimeout(150);
+  await page.mouse.move(f.x, f.y);
+  await page.screenshot({ path: join(shots, '11-inventaire.png') });
+  const st3 = await sv();
+  check('Inventaire (I) : déplacer une pile à la souris', a.open && st2.slots[20]?.[0] === 'wood' && st2.slots[from] === null && st2.items.wood === st1.items.wood,
+    `bois en ${from} -> ${slotOf(st2, 'wood')}`);
+  check('Équiper un silex (clic droit)', st3.equipment.hand === 'flint' && !st3.items.flint, `main : ${st3.equipment.hand}`);
+  await page.keyboard.press('KeyI');
+
+  // A rock: bare hands need 8 hits, the flint fewer stone points per hit than stone but more than 1.
+  const rock = (await api('propsNear', 24.5, 24.5, 12)).find((p) => p.type === 'rock');
+  await teleport(rock.x - 0.85, rock.y);
+  await api('face', 1, 0);
+  await page.waitForTimeout(200);
+  await page.keyboard.press('KeyE');
+  await page.waitForTimeout(200);
+  const hitRock = (await api('propsNear', rock.x, rock.y, 0.1)).find((p) => p.id === rock.id);
+  check('Frapper un rocher avec l’outil en main', hitRock && hitRock.hpLeft < 8 && hitRock.hpLeft > 0, `points restants ${hitRock?.hpLeft?.toFixed(2)}`);
+
+  // Drop with G and pick up again with E.
+  const before = (await sv()).items;
+  await page.keyboard.press(`Digit${slotOf(await sv(), 'berries') + 1}`);
+  await teleport(24.5, 24.5);
+  await api('face', 1, 0);
+  await page.waitForTimeout(150);
+  const selItem = Object.keys(before)[0];
+  await page.keyboard.press('KeyG');
+  await page.waitForTimeout(200);
+  const dropped = (await api('propsNear', 24.5, 24.5, 1.5)).find((p) => p.type === 'dropped');
+  await page.keyboard.press('KeyE');
+  await page.waitForTimeout(300);
+  const after = (await sv()).items;
+  check('Poser (G) puis ramasser (E) un objet', !!dropped && (await api('propsNear', 24.5, 24.5, 1.5)).every((p) => p.type !== 'dropped') && Object.values(after).reduce((x, y) => x + y, 0) === Object.values(before).reduce((x, y) => x + y, 0),
+    `posé : ${dropped?.item ?? 'rien'} (sélection ${selItem})`);
+
+  // Running empties stamina; exhaustion stops running.
+  await teleport(24.5, 24.5);
+  await page.keyboard.down('ShiftLeft');
+  for (const k of ['KeyD', 'KeyA', 'KeyD', 'KeyA']) {
+    await page.keyboard.down(k);
+    await page.waitForTimeout(3200);
+    await page.keyboard.up(k);
+  }
+  const tired = await state();
+  await page.keyboard.up('ShiftLeft');
+  check('L’endurance se vide en courant (épuisement)', tired.survival.exhausted || tired.survival.stamina < 20, `endurance ${tired.survival.stamina.toFixed(0)}, épuisé ${tired.survival.exhausted}`);
+
+  // Death and respawn.
+  await api('setVital', 'hunger', 0);
+  await api('setVital', 'thirst', 0);
+  await api('setVital', 'health', 0.5);
+  await page.waitForTimeout(800);
+  const dead = await sv();
+  await page.screenshot({ path: join(shots, '12-mort.png') });
+  await page.waitForTimeout(3500);
+  const back = await state();
+  check('Mort puis réapparition au point de départ', dead.dead && !back.survival.dead && back.survival.health === 100 && Math.hypot(back.player.x - 24.5, back.player.y - 24.5) < 0.5,
+    `mort ${dead.dead}, santé après ${back.survival.health}`);
+
   // Zoom with the wheel.
   const z0 = (await state()).zoom;
   await page.mouse.move(640, 360);

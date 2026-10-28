@@ -1,0 +1,18 @@
+{
+  "_comment": "Équilibrage de la survie. Jauges sur 100. Les taux sont par seconde de jeu sauf mention contraire.",
+  "start": { "health": 100, "hunger": 85, "thirst": 85, "stamina": 100, "bodyTemp": 37, "items": [["loincloth", 1]], "equipped": { "body": "loincloth" } },
+  "hunger": { "perMinute": 2.5, "runFactor": 1.3, "coldFactor": 1.6 },
+  "thirst": { "perMinute": 4, "runFactor": 1.5, "heatFactor": 1.8 },
+  "stamina": { "runDrain": 9, "regen": 16, "regenDelay": 0.8, "recoverThreshold": 30, "hitCost": 2, "lowNeedsRegenFactor": 0.5 },
+  "health": { "regen": 0.25, "regenNeeds": 60, "starveDamage": 0.5, "dehydrateDamage": 0.7, "coldDamage": 0.3, "heatDamage": 0.3 },
+  "needsLow": 20,
+  "temperature": {
+    "comfortMin": 12, "comfortMax": 28, "coreTarget": 37, "perDegreeOutside": 0.2, "minTarget": 31, "maxTarget": 41,
+    "approachRate": 0.04, "coldBelow": 35.5, "freezingBelow": 34.5, "hotAbove": 38.5, "overheatAbove": 39.5,
+    "air": { "base": -3, "range": 34, "perLevelAbove": 1.6, "levelReference": 2, "inWater": -4, "biome": { "temperate_forest": 0, "plains": 1, "swamp": 2, "rocky_mountains": -5 } },
+    "testMapAir": 18
+  },
+  "actions": { "reach": 1.35, "hitCooldown": 0.55, "drinkCooldown": 0.7, "drinkAmount": 12, "eatCooldown": 0.35, "baseHitPower": 1 },
+  "respawn": { "delay": 3, "minHunger": 50, "minThirst": 50 },
+  "inventory": { "slots": 24, "hotbar": 8 }
+}

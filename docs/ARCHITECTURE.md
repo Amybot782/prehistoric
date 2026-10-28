@@ -78,7 +78,10 @@ src/
   entities/          Entités simulées (joueur ; animaux et habitants plus tard)
   input/             Actions clavier configurables
   render/            Rendu des chunks (sol, relief, objets), du joueur, caméra
-  ui/                Mini-carte
+  ui/                Mini-carte, interface de survie (barres, barre rapide, inventaire)
+  survival/          Besoins (Vitals), température de l'air, règles de récolte
+  inventory/         Inventaire par emplacements, équipement
+  gameplay/          Boucle de survie du joueur (relie besoins, inventaire, actions sur le monde)
   assets/            Catalogue des textures, générateurs de graphismes provisoires
   scenes/            Scènes Phaser (démarrage, monde, interface)
   debug/             Outils de débogage visuels
@@ -146,3 +149,23 @@ l'exécutable et le code Electron restent ceux du zip installé.
   pour cacher correctement ce qui est derrière elles. Textures et sprites sont recyclés (réserve plafonnée).
 - **Mini-carte** (`ui/Minimap.js`) : une petite image par chunk exploré (1 pixel par tuile), conservée après
   déchargement, assemblée en vue isométrique autour du joueur.
+
+## 10. Survie et récolte (phase 3)
+
+- **Besoins** (`survival/Vitals.js`, réglages `data/survival.json`) : santé, faim, soif, endurance,
+  température du corps. Pas de Phaser : la même classe servira aux habitants (phase 6).
+  La course vide l'endurance (épuisement jusqu'à 30 %), la faim et la soif à zéro, le gel ou le coup
+  de chaleur font perdre de la santé ; bien nourri, on récupère.
+- **Température** (`survival/climate.js`) : champ de température du monde + biome + altitude + eau.
+  Les vêtements ajoutent des degrés quand il fait froid. Le jour/nuit et la météo (phase 7) ajouteront un décalage.
+- **Récolte** (`survival/harvest.js`) : chaque objet a des points de récolte (`harvest.hp` = coups à mains nues).
+  Un outil (`tool` dans `items.json`) retire plus de points par coup ; le total obtenu reste le même.
+  Les points restants sont enregistrés (`ChunkDeltaStore.damage`), les arbres laissent une souche,
+  la repousse se fait après `regrowSeconds` de temps de jeu, jamais sur le joueur.
+- **Inventaire** (`inventory/Inventory.js`) : 24 emplacements dont 8 de barre rapide, piles limitées.
+  `add` rend ce qui ne rentre pas : la récolte en trop est posée au sol, rien ne disparaît.
+  **Équipement** (`inventory/Equipment.js`) : main (outil) et corps (vêtement), sans usure.
+- **Objets posés au sol** : stockés par chunk dans `ChunkDeltaStore.dropped`, recréés au rechargement.
+- **Boucle du joueur** (`gameplay/PlayerSurvival.js`) : cible (devant le personnage ou sous la souris),
+  action principale (récolter, ramasser, boire), manger, équiper, poser, mort et réapparition.
+  Elle émet des événements que l'interface (`ui/SurvivalHud.js`) affiche.

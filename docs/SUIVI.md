@@ -4,7 +4,8 @@
 
 | Version | Date | Contenu | Statut |
 |---|---|---|---|
-| 0.2.0 | 2026-10-28 | Phase 2 — Monde procédural : chunks, seed, relief, eau, 4 biomes, ressources naturelles, mini-carte | En attente de validation |
+| 0.3.0 | 2026-10-28 | Phase 3 — Survie et récolte : besoins, température, récolte, inventaire, équipement, interface de survie | En attente de validation |
+| 0.2.0 | 2026-10-28 | Phase 2 — Monde procédural : chunks, seed, relief, eau, 4 biomes, ressources naturelles, mini-carte | Validée par Raphael |
 | 0.1.2 | 2026-10-28 | Mise à jour automatique depuis GitHub Releases, retour à la version précédente en cas d'échec, publication automatique sur Windows | Installée par Raphael ; phase 1 validée |
 | 0.1.1 | 2026-10-28 | Correction du tremblement de l'image pendant la marche (zoom entier, caméra calée au pixel sur le joueur) | Incluse dans 0.1.2 |
 | 0.1.0 | 2026-10-28 | Phase 1 — Fondations techniques | Lancée par Raphael sur Windows ; tremblement signalé |
@@ -28,15 +29,19 @@
 - Relief en terrasses franchissables, eau profonde / peu profonde, plages ; 4 biomes ; 15 types d'objets naturels.
 - Chargement et déchargement progressifs des chunks, modifications du joueur conservées (prêtes pour la sauvegarde).
 - Mini-carte des zones explorées (M), bordures de chunks (F7), nouveau monde (F9).
-- 75 tests unitaires et 25 vérifications de bout en bout dans Chromium.
+- Besoins de survie : santé, faim, soif, endurance (course), température du corps selon le climat et les vêtements.
+- Récolte : arbres (souche, chute), rochers (fissures), plantes, objets au sol ; outils plus rapides ; repousse.
+- Inventaire de 24 emplacements avec barre rapide, équipement main / corps, manger, boire, poser et ramasser.
+- Mort et réapparition au point de départ (inventaire conservé).
+- Interface de survie : barres, température, états, barre rapide, inventaire à la souris, messages, écran de mort.
+- 108 tests unitaires et 36 vérifications de bout en bout dans Chromium.
 
 ## Fonctionnalités en cours
 
-- Aucune (phase 2 livrée, en attente de validation).
+- Aucune (phase 3 livrée, en attente de validation).
 
 ## Fonctionnalités futures (V1)
 
-- Phase 3 : survie (santé, faim, soif, endurance, température), récolte, inventaire, équipements.
 - Phase 4 : craft instantané, ateliers, construction pièce par pièce, sauvegarde des constructions.
 - Phase 5 : animaux et dinosaures, combat, esquive, réapparition.
 - Phase 6 : habitants, métiers, pathfinding, transport.
@@ -44,9 +49,13 @@
 
 ## Bugs connus et limitations
 
-- Phase 2 non encore essayée sur le PC de Raphael (performances réelles inconnues).
+- Phase 3 non encore essayée sur le PC de Raphael.
+- Rien n'est encore sauvegardé quand on quitte le jeu (sauvegardes en phase 7) : l'inventaire repart de zéro à chaque lancement.
+- Pas encore de feu ni de fabrication (phase 4) : contre le froid, seul le pagne de départ aide.
+- Les blessures arrivent avec le combat (phase 5).
+- On ne peut pas encore récolter l'argile du sol.
 - Pas encore de rivières : seulement des lacs, des mers et des marais.
-- Les objets ne se récoltent pas encore (phase 3) ; le monde n'est pas encore sauvegardé sur disque (phase 7), seule la seed est retenue.
+- Le monde n'est pas encore sauvegardé sur disque (phase 7), seule la seed est retenue.
 - Pas de menu de création de monde (phase 7) : F9 et la seed par défaut le remplacent.
 - La grille de débogage (F6) est dessinée au niveau 0 : décalée sur les hauteurs.
 - Pas d'installateur (NSIS demande Wine pour être produit depuis Linux) ni d'icône personnalisée : la version est un dossier à extraire.

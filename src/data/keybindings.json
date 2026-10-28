@@ -49,5 +49,50 @@
   ],
   "toggleMinimap": [
     "KeyM"
+  ],
+  "interact": [
+    "KeyE"
+  ],
+  "useItem": [
+    "KeyF"
+  ],
+  "dropItem": [
+    "KeyG"
+  ],
+  "inventory": [
+    "KeyI",
+    "Tab"
+  ],
+  "hotbar1": [
+    "Digit1",
+    "Numpad1"
+  ],
+  "hotbar2": [
+    "Digit2",
+    "Numpad2"
+  ],
+  "hotbar3": [
+    "Digit3",
+    "Numpad3"
+  ],
+  "hotbar4": [
+    "Digit4",
+    "Numpad4"
+  ],
+  "hotbar5": [
+    "Digit5",
+    "Numpad5"
+  ],
+  "hotbar6": [
+    "Digit6",
+    "Numpad6"
+  ],
+  "hotbar7": [
+    "Digit7",
+    "Numpad7"
+  ],
+  "hotbar8": [
+    "Digit8",
+    "Numpad8"
   ]
 }

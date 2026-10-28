@@ -5,6 +5,8 @@ import props from '../data/props.json';
 import biomes from '../data/biomes.json';
 import worldgen from '../data/worldgen.json';
 import bindings from '../data/keybindings.json';
+import items from '../data/items.json';
+import survivalCfg from '../data/survival.json';
 import { IsoProjection } from '../iso/projection.js';
 import { FixedStepClock } from '../core/FixedStepClock.js';
 import { InputMap } from '../input/InputMap.js';
@@ -13,6 +15,7 @@ import { ProceduralGenerator } from '../world/generation/ProceduralGenerator.js'
 import { TestMapGenerator } from '../world/testMap.js';
 import { resolveWorldChoice, rememberWorld, newRandomWorldSettings } from '../world/worldSession.js';
 import { Player } from '../entities/Player.js';
+import { PlayerSurvival } from '../gameplay/PlayerSurvival.js';
 import { ChunkRenderer } from '../render/ChunkRenderer.js';
 import { PlayerView } from '../render/PlayerView.js';
 import { CameraController } from '../render/CameraController.js';
@@ -61,14 +64,20 @@ export class WorldScene extends Phaser.Scene {
       streaming: worldgen.streaming,
     });
     const spawn = generator.findSpawn();
+    this.spawn = spawn;
     this.player = this.world.addEntity(new Player(spawn.x, spawn.y, gameCfg.player));
     this.streamAround(spawn.x, spawn.y, Infinity);
     this.player.placeAt(spawn.x, spawn.y, this.world.groundZ(spawn.x, spawn.y));
+    this.survival = new PlayerSurvival({ world: this.world, player: this.player, cfg: survivalCfg, itemDefs: items, biomeKeys: BIOME_KEYS });
+    this.survival.events.on('death', ({ cause }) => log.info(`Mort du joueur (${cause ?? 'inconnue'})`));
+    this.regrowTimer = 0;
 
     this.chunkView = new ChunkRenderer(this, this.world, this.projection, origins);
     this.playerView = new PlayerView(this, this.player, this.projection, origins, this.world);
     const co = origins.ui_tile_cursor ?? { x: 0.5, y: 0.5 };
     this.cursor = this.add.image(0, 0, 'ui_tile_cursor').setOrigin(co.x, co.y).setDepth(DepthLayer.OVERLAY - 1);
+    // Marks the object or water an action would apply to.
+    this.targetMark = this.add.image(0, 0, 'ui_tile_cursor').setOrigin(co.x, co.y).setDepth(DepthLayer.GROUND_DECAL + 1).setTint(0x9cff7a);
     this.debugDraw = new DebugDraw(this, this.world, this.projection);
 
     this.cameraCtl = new CameraController(this.cameras.main, gameCfg.camera);
@@ -112,6 +121,11 @@ export class WorldScene extends Phaser.Scene {
     if (input.justPressed('debugChunks')) this.debugDraw.showChunks = !this.debugDraw.showChunks;
     if (input.justPressed('debugOverlay')) this.events.emit('toggle-debug');
     if (input.justPressed('toggleMinimap')) this.events.emit('toggle-minimap');
+    if (input.justPressed('inventory')) this.events.emit('toggle-inventory');
+    const sv = this.survival;
+    for (let i = 0; i < 8; i++) if (input.justPressed(`hotbar${i + 1}`)) sv.selectHotbar(i);
+    if (input.justPressed('useItem')) sv.useSelected();
+    if (input.justPressed('dropItem')) sv.dropSlot(sv.selected, input.isDown('run') ? Infinity : 1);
     if (input.justPressed('zoomIn')) this.cameraCtl.zoomBy(1);
     if (input.justPressed('zoomOut')) this.cameraCtl.zoomBy(-1);
     if (input.justPressed('zoomReset')) this.cameraCtl.resetZoom();
@@ -123,15 +137,23 @@ export class WorldScene extends Phaser.Scene {
 
     // Simulation: fixed steps, independent of the frame rate.
     const axes = input.moveAxes(this._axes);
-    const dir = this.projection.screenDirToWorld(axes.x, axes.y, this._dir);
-    const run = input.isDown('run');
+    const dir = this.projection.screenDirToWorld(sv.dead ? 0 : axes.x, sv.dead ? 0 : axes.y, this._dir);
     const steps = this.clock.advance(delta);
     const p = this.player;
+    const dt = this.clock.stepSeconds;
     for (let i = 0; i < steps; i++) {
       p.snapshot();
-      p.step(this.clock.stepSeconds, dir, run, this.world.collisions, this.projection);
-      p.followGround(this.world.groundZ(p.x, p.y), this.clock.stepSeconds);
+      p.step(dt, dir, input.isDown('run') && sv.vitals.canRun(), this.world.collisions, this.projection);
+      p.followGround(this.world.groundZ(p.x, p.y), dt);
+      sv.step(dt);
+      this.world.time += dt;
     }
+    this.regrowTimer += steps * dt;
+    if (this.regrowTimer >= 2) {
+      this.regrowTimer = 0;
+      this.world.updateRegrowth();
+    }
+    if (sv.canRespawn()) this.respawn();
     input.endFrame();
 
     // Rendering: interpolated between the last two simulation states.
@@ -147,7 +169,40 @@ export class WorldScene extends Phaser.Scene {
       depth: this.playerView.depth,
     });
     this.updateMouse();
+    this.updateActions();
     this.debugDraw.draw(view, this.player);
+  }
+
+  /** Target under the mouse or in front of the character, and the main action (E / left click). */
+  updateActions() {
+    const sv = this.survival;
+    const ui = this.scene.get('UI')?.hud;
+    const ptr = this.input.activePointer;
+    const overUi = ui?.pointerOverUi(ptr) ?? false;
+    let hovered = null;
+    if (!overUi && this.mouseOnCanvas) {
+      const near = this.world.propsNear(this.mouse.x, this.mouse.y, 2.5, this._hoverScratch ??= []);
+      hovered = this.chunkView.propAtScreen(this._m.x, this._m.y, near);
+    }
+    sv.updateTarget(hovered);
+    const clicking = ptr.isDown && ptr.leftButtonDown() && !overUi && this.mouseOnCanvas;
+    if (this.inputMap.isDown('interact') || clicking) sv.interact();
+    const tg = sv.target;
+    const w = sv.water;
+    if (tg || w) {
+      const x = tg ? tg.tx + 0.5 : w.tx + 0.5, y = tg ? tg.ty + 0.5 : w.ty + 0.5;
+      const c = this.projection.worldToScreen(x, y, this.world.heightAt(Math.floor(x), Math.floor(y)) * this.world.levelHeight);
+      this.targetMark.setPosition(c.x, c.y).setVisible(true);
+    } else {
+      this.targetMark.setVisible(false);
+    }
+  }
+
+  respawn() {
+    const { x, y } = this.spawn;
+    this.streamAround(x, y, Infinity);
+    this.survival.respawn(x, y, this.world.groundZ(x, y));
+    log.info('Réapparition au point de départ');
   }
 
   /**
@@ -213,6 +268,7 @@ export class WorldScene extends Phaser.Scene {
     const ptr = this.input.activePointer;
     const cam = this.cameras.main;
     const wp = cam.getWorldPoint(ptr.x, ptr.y, this._m);
+    this.mouseOnCanvas = ptr.x >= 0 && ptr.y >= 0 && ptr.x < cam.width && ptr.y < cam.height && ptr.active !== false;
     const levels = this.world.generator.levels ?? 0;
     const lh = this.world.levelHeight;
     let found = null;
@@ -272,6 +328,20 @@ export class WorldScene extends Phaser.Scene {
       visibleProps: this.chunkView.visibleCount,
       render: this.chunkView.stats,
       overlapping: w.collisions.overlaps(p.x, p.y, p.radius - 1e-3),
+      survival: this.survivalState(),
+    };
+  }
+
+  survivalState() {
+    const sv = this.survival;
+    const v = sv.vitals;
+    const counts = {};
+    for (const s of sv.inventory.slots) if (s) counts[s.item] = (counts[s.item] ?? 0) + s.count;
+    return {
+      health: v.health, hunger: v.hunger, thirst: v.thirst, stamina: v.stamina, bodyTemp: v.bodyTemp, airTemp: v.airTemp,
+      exhausted: v.exhausted, dead: sv.dead, status: v.status, items: counts, slots: sv.inventory.toJSON(), equipment: { ...sv.equipment.slots }, selected: sv.selected,
+      target: sv.target ? { id: sv.target.id, type: sv.target.type, hpLeft: sv.target.hpLeft } : null,
+      water: !!sv.water, worldTime: this.world.time,
     };
   }
 
@@ -304,6 +374,18 @@ export class WorldScene extends Phaser.Scene {
       },
       tileAt: (tx, ty) => ({ ground: this.world.tileAt(tx, ty), height: this.world.heightAt(tx, ty), biome: this.world.biomeAt(tx, ty) }),
       newWorld: () => this.newRandomWorld(),
+      give: (item, n) => this.survival.inventory.add(item, n),
+      setVital: (name, value) => { this.survival.vitals[name] = value; },
+      face: (dx, dy) => { const l = Math.hypot(dx, dy); this.player.dirX = dx / l; this.player.dirY = dy / l; },
+      propsNear: (x, y, r) => this.world.propsNear(x, y, r).map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, hpLeft: p.hpLeft, item: p.item, count: p.count })),
+      advanceTime: (s) => { this.world.time += s; this.world.updateRegrowth(); },
+      // Centre of an interface slot in canvas pixels (inventory panel when open, else quick bar).
+      hudSlot: (kind, key) => {
+        const hud = this.scene.get('UI').hud;
+        const half = (20 * hud.s) / 2;
+        const v = kind === 'equip' ? (hud.open ? hud.panelEquip[key] : hud.equipViews[key]) : hud.open ? hud.slotViews[key] : hud.hotbar[key];
+        return { x: v.x + half, y: v.y + half, open: hud.open };
+      },
       logs: () => logger.entries.slice(-50),
       renderProbe: () => this.renderProbe(),
     };

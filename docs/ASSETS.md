@@ -33,7 +33,9 @@ Si le fichier est absent ou illisible, le jeu utilise le graphisme provisoire et
 | `ui_tile_cursor` | ui | Curseur de tuile |
 | `prop_tree`, `prop_pine`, `prop_birch`, `prop_swamp_tree` | vegetation | Arbres (feuillu, pin, bouleau, arbre des marais) |
 | `prop_bush`, `prop_berry_bush`, `prop_tall_grass`, `prop_reeds`, `prop_flowers` | vegetation | Buissons, baies, hautes herbes, roseaux, fleurs |
-| `prop_rock`, `prop_boulder`, `prop_outcrop`, `prop_flint` | terrain | Rochers, gros bloc, affleurement, silex |
+| `prop_rock`, `prop_boulder`, `prop_outcrop`, `prop_flint`, `prop_pebble` | terrain | Rochers, gros bloc, affleurement, silex, cailloux |
+| `prop_stump`, `prop_branch`, `prop_mushroom` | vegetation | Souche, branche au sol, champignons |
+| `item_<objet>` | ui | Icône d'inventaire 16×16 (`wood`, `stick`, `stone`, `flint`, `fiber`, `reed`, `resin`, `clay`, `berries`, `mushroom`, `loincloth`), aussi dessinée au sol quand l'objet est posé |
 | `prop_wall_x`, `prop_wall_y` | buildings | Pièces de mur (deux orientations) |
 | `tile_<sol>_<0..2>` | terrain | Trois variantes par type de sol (`grass`, `dirt`, `sand`, `water`, `stone`, `shallow_water`, `forest_floor`, `mud`, `swamp_grass`, `gravel`, `clay`) |
 | `face_<sol>_left`, `face_<sol>_right` | terrain | Parois d'une tuile surélevée (16×16 px, côté gauche et côté droit, 8 px de haut par niveau) |

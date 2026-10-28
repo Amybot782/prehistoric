@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { t } from '../i18n/index.js';
 import { Minimap } from '../ui/Minimap.js';
+import { SurvivalHud } from '../ui/SurvivalHud.js';
+import items from '../data/items.json';
 
 /**
  * Screen-space interface drawn above the world, unaffected by camera zoom.
@@ -29,7 +31,7 @@ export class UIScene extends Phaser.Scene {
       color: '#e8f0d8',
       backgroundColor: 'rgba(12,16,10,0.55)',
       padding: { x: 8, y: 4 },
-    }).setOrigin(0.5, 1);
+    }).setOrigin(0.5, 0);
     const onToggleDebug = () => {
       this.showDebug = !this.showDebug;
       this.panel.setVisible(this.showDebug);
@@ -58,12 +60,17 @@ export class UIScene extends Phaser.Scene {
       this.minimapImage.setVisible(this.showMinimap);
     };
     this.worldScene.events.on('toggle-minimap', onToggleMinimap);
+    this.hud = new SurvivalHud(this, this.worldScene.survival, items);
+    const onToggleInventory = () => this.hud.toggleInventory();
+    this.worldScene.events.on('toggle-inventory', onToggleInventory);
     const onResize = () => this.layout();
     this.scale.on('resize', onResize);
     // The world scene restarts on a new world: drop listeners so they do not pile up.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.worldScene.events.off('toggle-debug', onToggleDebug);
       this.worldScene.events.off('toggle-minimap', onToggleMinimap);
+      this.worldScene.events.off('toggle-inventory', onToggleInventory);
+      this.hud.destroy();
       this.scale.off('resize', onResize);
       this.minimap.destroy();
       this.textures.remove('minimap');
@@ -96,14 +103,16 @@ export class UIScene extends Phaser.Scene {
     const ui = Math.max(1, height / 720);
     const fs = `${Math.round(13 * ui)}px`;
     this.panel.setFontSize(fs).setPosition(Math.round(8 * ui), Math.round(8 * ui));
-    this.hint.setFontSize(fs).setPosition(width / 2, height - Math.round(8 * ui));
+    this.hint.setFontSize(fs).setPosition(width / 2, Math.round(8 * ui));
     this.version.setFontSize(fs).setPosition(width - Math.round(8 * ui), height - Math.round(8 * ui));
-    this.notice.setFontSize(fs).setPosition(width / 2, Math.round(8 * ui));
+    this.notice.setFontSize(fs).setPosition(width / 2, Math.round(40 * ui));
+    this.hud?.layout();
     // Whole-number scale keeps the minimap pixels crisp.
     this.minimapImage.setScale(Math.max(1, Math.round(ui))).setPosition(width - Math.round(8 * ui), Math.round(8 * ui));
   }
 
   update(time) {
+    this.hud.update(time);
     if (this.showMinimap && time >= this.nextMinimap) {
       this.nextMinimap = time + 200;
       const p = this.worldScene.player;

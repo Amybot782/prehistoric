@@ -7,7 +7,7 @@ import { GENERATORS } from './placeholders.js';
  * (or sprite sheet) instead. Anything missing or failing to load falls back
  * to the placeholder, and the problem is logged.
  */
-export function buildCatalog(terrainTypes) {
+export function buildCatalog(terrainTypes, items = {}) {
   const entries = [
     { key: 'player', gen: 'playerSheet', folder: 'characters' },
     { key: 'shadow', gen: 'shadow', folder: 'effects' },
@@ -25,6 +25,10 @@ export function buildCatalog(terrainTypes) {
     { key: 'prop_flint', gen: 'flint', folder: 'terrain' },
     { key: 'prop_rock', gen: 'rock', folder: 'terrain' },
     { key: 'prop_boulder', gen: 'boulder', folder: 'terrain' },
+    { key: 'prop_stump', gen: 'stump', folder: 'vegetation' },
+    { key: 'prop_branch', gen: 'branch', folder: 'vegetation' },
+    { key: 'prop_mushroom', gen: 'mushroomProp', folder: 'vegetation' },
+    { key: 'prop_pebble', gen: 'pebble', folder: 'terrain' },
     { key: 'prop_wall_x', gen: 'wallX', folder: 'buildings' },
     { key: 'prop_wall_y', gen: 'wallY', folder: 'buildings' },
   ];
@@ -36,7 +40,16 @@ export function buildCatalog(terrainTypes) {
       entries.push({ key: faceTextureKey(t.key, side), gen: 'cliffFace', args: [t.face, side], folder: 'terrain' });
     }
   }
+  for (const [id, def] of Object.entries(items)) {
+    if (id.startsWith('_')) continue;
+    entries.push({ key: itemTextureKey(id), gen: 'itemIcon', args: [def.icon?.shape, def.icon?.colors ?? ['#ff00ff', '#ff00ff']], folder: 'ui' });
+  }
   return entries;
+}
+
+/** Inventory icon of an item (also drawn on the ground when dropped). */
+export function itemTextureKey(item) {
+  return `item_${item}`;
 }
 
 export const TERRAIN_VARIANTS = 3;

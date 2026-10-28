@@ -300,6 +300,118 @@ function wall(alongX) {
   pc.outline('#2b1f12');
   return { pc, originX: ax / pc.width, originY: ay / pc.height };
 }
+
+export function stump() {
+  const pc = new PixelCanvas(16, 12);
+  const ax = 8, ay = 9;
+  pc.rect(ax - 4, ay - 5, 8, 5, '#6b4a2b');
+  pc.rect(ax + 1, ay - 5, 3, 5, '#563a20');
+  pc.ellipse(ax, ay - 5, 4, 2, '#c49a64');
+  pc.set(ax, ay - 5, '#8a5a32');
+  pc.outline('#2b1f12');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function branch() {
+  const pc = new PixelCanvas(18, 8);
+  const ax = 9, ay = 6;
+  for (let i = -6; i <= 6; i++) pc.set(ax + i, ay - 2 + Math.round(i / 4), '#7a5230');
+  pc.set(ax - 2, ay - 3, '#7a5230');
+  pc.set(ax - 3, ay - 4, '#7a5230');
+  pc.set(ax + 3, ay - 1, '#5d9c3e');
+  pc.outline('#2b1f12');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function pebble() {
+  const pc = new PixelCanvas(14, 8);
+  const ax = 7, ay = 6;
+  pc.ellipse(ax - 2, ay - 2, 3, 2, '#9a9b94');
+  pc.ellipse(ax + 3, ay - 1, 2, 1.5, '#85877f');
+  pc.outline('#2e302c');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function mushroomProp() {
+  const pc = new PixelCanvas(14, 12);
+  const ax = 7, ay = 10;
+  for (const [dx, h] of [[-3, 4], [2, 6]]) {
+    pc.rect(ax + dx, ay - h, 2, h, '#f0e2c8');
+    pc.ellipse(ax + dx + 1, ay - h, 3.2, 2, '#b8643a');
+    pc.set(ax + dx, ay - h - 1, '#f0e2c8');
+  }
+  pc.outline('#3a2414');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+/** 16x16 inventory icon, also used for items lying on the ground. */
+export function itemIcon(shape, [a, b]) {
+  const pc = new PixelCanvas(16, 16);
+  switch (shape) {
+    case 'log':
+      pc.rect(2, 6, 11, 5, a);
+      pc.rect(2, 10, 11, 1, shade(a, -0.25));
+      pc.ellipse(13, 8.5, 2, 2.6, b);
+      pc.set(13, 8, shade(b, -0.3));
+      break;
+    case 'stick':
+      for (let i = 0; i < 12; i++) pc.set(2 + i, 13 - i, i % 4 === 0 ? b : a);
+      for (let i = 0; i < 12; i++) pc.set(3 + i, 13 - i, b);
+      pc.set(9, 9, a); pc.set(10, 10, a);
+      break;
+    case 'stone':
+      pc.ellipse(8, 9, 6, 4.5, (dx, dy) => (-dx - dy > 0.3 ? shade(a, 0.15) : dy > 0.3 ? b : a));
+      break;
+    case 'flint':
+      pc.polygon([{ x: 3, y: 12 }, { x: 8, y: 2 }, { x: 13, y: 9 }, { x: 9, y: 14 }], a);
+      pc.polygon([{ x: 7, y: 5 }, { x: 8, y: 3 }, { x: 10, y: 7 }], b);
+      break;
+    case 'fiber':
+      for (let i = 0; i < 5; i++) for (let k = 0; k < 11; k++) pc.set(4 + i * 2 + (k > 7 ? 1 : 0), 14 - k, k > 8 ? a : b);
+      pc.rect(3, 9, 11, 1, shade(b, -0.3));
+      break;
+    case 'reed':
+      for (let i = 0; i < 3; i++) {
+        for (let k = 0; k < 12; k++) pc.set(5 + i * 3, 15 - k, a);
+        pc.rect(4 + i * 3, 2 + i, 3, 4, b);
+      }
+      break;
+    case 'drop':
+      pc.ellipse(8, 10, 4.5, 4.5, a);
+      pc.polygon([{ x: 4, y: 9 }, { x: 8, y: 2 }, { x: 12, y: 9 }], a);
+      pc.set(6, 9, shade(a, 0.4));
+      pc.rect(8, 12, 3, 1, b);
+      break;
+    case 'lump':
+      pc.ellipse(8, 10, 6, 4, a);
+      pc.ellipse(6, 8, 3, 2, shade(a, 0.12));
+      pc.rect(9, 12, 3, 1, b);
+      break;
+    case 'berries':
+      for (const [x, y, c] of [[5, 9, a], [9, 8, a], [7, 12, b], [11, 11, a], [4, 13, b]]) {
+        pc.ellipse(x, y, 2.2, 2.2, c);
+        pc.set(x - 1, y - 1, '#ffffff');
+      }
+      pc.rect(7, 3, 1, 5, '#4f7d2f');
+      pc.rect(8, 4, 3, 1, '#4f7d2f');
+      break;
+    case 'mushroom':
+      pc.rect(7, 8, 3, 6, b);
+      pc.ellipse(8.5, 7, 6, 3.5, a);
+      pc.set(6, 6, b); pc.set(10, 5, b);
+      break;
+    case 'cloth':
+      pc.polygon([{ x: 2, y: 4 }, { x: 14, y: 4 }, { x: 12, y: 13 }, { x: 8, y: 11 }, { x: 4, y: 13 }], a);
+      pc.rect(2, 4, 12, 2, b);
+      pc.set(6, 8, b); pc.set(10, 9, b);
+      break;
+    default:
+      pc.rect(4, 4, 8, 8, '#ff00ff');
+  }
+  pc.outline('#1a120a');
+  return { pc, originX: 0.5, originY: 0.75 };
+}
+
 export const wallX = () => wall(true);
 export const wallY = () => wall(false);
 
@@ -417,6 +529,11 @@ export const GENERATORS = {
   reeds,
   flowers,
   cliffFace,
+  stump,
+  branch,
+  pebble,
+  mushroomProp,
+  itemIcon,
   wallX,
   wallY,
   playerSheet,

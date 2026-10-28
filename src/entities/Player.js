@@ -13,6 +13,9 @@ export class Player extends Entity {
     this.running = false;
     this.moving = false;
     this.distanceWalked = 0;
+    // Last movement direction in world space: what the character faces (actions).
+    this.dirX = 1;
+    this.dirY = 0;
   }
 
   /**
@@ -46,7 +49,11 @@ export class Player extends Entity {
     const moved = Math.hypot(mx, my);
     this.distanceWalked += moved;
     this.moving = moved > 1e-4;
-    if (hasInput) this.facing = projection.facingFromWorldDir(dir.x, dir.y);
+    if (hasInput) {
+      this.facing = projection.facingFromWorldDir(dir.x, dir.y);
+      this.dirX = dir.x;
+      this.dirY = dir.y;
+    }
   }
 }
 

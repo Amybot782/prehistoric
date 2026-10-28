@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { DepthLayer, objectDepth } from '../iso/depth.js';
 import { terrainTextureKey, faceTextureKey, TERRAIN_VARIANTS } from '../assets/assetCatalog.js';
 import { hash2 } from '../core/random.js';
@@ -39,6 +40,7 @@ export class ChunkRenderer {
     this.imagePool = [];
     this.visibleCount = 0;
     this._p = { x: 0, y: 0 };
+    this._bounds = new Phaser.Geom.Rectangle();
 
     const ev = world.events;
     this._off = [
@@ -46,6 +48,11 @@ export class ChunkRenderer {
       ev.on('chunk:unloaded', (c) => this.removeChunk(c)),
       ev.on('chunk:changed', (c) => this.redrawGround(c)),
       ev.on('prop:removed', (p) => this.removePropView(p)),
+      ev.on('prop:added', (p) => {
+        const view = this.views.get(p.chunk);
+        if (view) this.addPropView(view, p);
+      }),
+      ev.on('prop:damaged', (p) => this.onDamaged(p)),
     ];
     for (const c of world.chunks.values()) this.addChunk(c);
   }
@@ -59,7 +66,7 @@ export class ChunkRenderer {
   _image(key, x, y, origin, depth) {
     const img = this.imagePool.pop() ?? this.scene.add.image(0, 0, key);
     img.setTexture(key).setPosition(x, y).setOrigin(origin.x, origin.y).setDepth(depth)
-      .setAlpha(1).setVisible(true).setActive(true).setFlipX(false).clearTint();
+      .setAlpha(1).setVisible(true).setActive(true).setFlipX(false).clearTint().setAngle(0);
     return img;
   }
 
@@ -173,18 +180,72 @@ export class ChunkRenderer {
 
   addPropView(view, prop) {
     const p = this.proj.worldToScreen(prop.x, prop.y, prop.z, this._p);
-    const key = prop.def.texture;
+    const key = prop.texture ?? prop.def.texture;
     const sprite = this._image(key, p.x, p.y, this.origins[key] ?? { x: 0.5, y: 1 }, objectDepth(prop.x, prop.y));
-    sprite.setFlipX(hash2(prop.tx, prop.ty, 77) < 0.5);
-    view.props.set(prop.id, { prop, sprite, faded: false });
+    if (prop.type !== 'dropped') sprite.setFlipX(hash2(prop.tx, prop.ty, 77) < 0.5);
+    const pv = { prop, sprite, faded: false, baseX: p.x, shakeUntil: 0 };
+    view.props.set(prop.id, pv);
+    this.applyWear(pv);
   }
 
   removePropView(prop) {
     const view = this.views.get(prop.chunk);
     const pv = view?.props.get(prop.id);
     if (!pv) return;
+    if (prop.harvested) this.playDepleted(pv);
     this._release(pv.sprite);
     view.props.delete(prop.id);
+  }
+
+  /** A hit: the object shakes, and rocks darken as they crack. */
+  onDamaged(prop) {
+    const pv = this.views.get(prop.chunk)?.props.get(prop.id);
+    if (!pv) return;
+    pv.shakeUntil = this.scene.time.now + 260;
+    this.applyWear(pv);
+  }
+
+  applyWear(pv) {
+    const { prop, sprite } = pv;
+    const h = prop.def.harvest;
+    if (!h || h.kind !== 'stone' || prop.hpLeft >= h.hp) return;
+    const c = Math.round(255 * (0.62 + 0.38 * (prop.hpLeft / h.hp)));
+    sprite.setTint((c << 16) | (c << 8) | c);
+  }
+
+  /** Short farewell animation: trees fall over, other objects shrink away. */
+  playDepleted(pv) {
+    const s = pv.sprite;
+    const ghost = this.scene.add.image(pv.baseX, s.y, s.texture.key)
+      .setOrigin(s.originX, s.originY).setDepth(s.depth).setFlipX(s.flipX).setTint(s.tintTopLeft);
+    const falls = pv.prop.def.harvest?.kind === 'wood';
+    this.scene.tweens.add({
+      targets: ghost,
+      angle: falls ? (s.flipX ? -84 : 84) : 0,
+      scaleX: falls ? 1 : 0.2,
+      scaleY: falls ? 1 : 0.2,
+      alpha: 0,
+      duration: falls ? 700 : 220,
+      ease: falls ? 'Quad.easeIn' : 'Linear',
+      onComplete: () => ghost.destroy(),
+    });
+  }
+
+  /** Topmost object sprite under a screen point, among `candidates` (world props). */
+  propAtScreen(sx, sy, candidates) {
+    let best = null;
+    let bestDepth = -Infinity;
+    for (const prop of candidates) {
+      const pv = this.views.get(prop.chunk)?.props.get(prop.id);
+      if (!pv || !pv.sprite.visible) continue;
+      const b = pv.sprite.getBounds(this._bounds);
+      if (sx < b.x || sx > b.right || sy < b.y || sy > b.bottom) continue;
+      if (pv.sprite.depth > bestDepth) {
+        bestDepth = pv.sprite.depth;
+        best = prop;
+      }
+    }
+    return best;
   }
 
   /**
@@ -193,6 +254,7 @@ export class ChunkRenderer {
    */
   update(worldView, focus) {
     let visible = 0;
+    const now = this.scene.time.now;
     const margin = 96;
     const left = worldView.x - margin, right = worldView.right + margin;
     const top = worldView.y - margin, bottom = worldView.bottom + margin * 2;
@@ -203,6 +265,11 @@ export class ChunkRenderer {
       for (const img of view.images) img.setVisible(chunkVisible && img.x > left && img.x < right && img.y > top && img.y < bottom);
       for (const pv of view.props.values()) {
         const s = pv.sprite;
+        if (pv.shakeUntil) {
+          const left = pv.shakeUntil - now;
+          if (left > 0) s.x = pv.baseX + Math.sin(left * 0.09) * 1.5;
+          else { s.x = pv.baseX; pv.shakeUntil = 0; }
+        }
         const inView = chunkVisible && s.x > left && s.x < right && s.y > top && s.y < bottom;
         s.setVisible(inView);
         if (!inView) continue;

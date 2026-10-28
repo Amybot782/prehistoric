@@ -30,10 +30,8 @@ export class Minimap {
     this._off = [
       ev.on('chunk:loaded', (c) => this.drawChunk(c)),
       ev.on('chunk:changed', (c) => this.drawChunk(c)),
-      ev.on('prop:removed', (p) => {
-        const c = world.chunks.get(p.chunk);
-        if (c) this.drawChunk(c);
-      }),
+      ev.on('prop:removed', (p) => this.redrawChunkOf(p)),
+      ev.on('prop:added', (p) => this.redrawChunkOf(p)),
     ];
     for (const c of world.chunks.values()) this.drawChunk(c);
   }
@@ -41,6 +39,11 @@ export class Minimap {
   destroy() {
     for (const off of this._off) off();
     this.chunkCanvases.clear();
+  }
+
+  redrawChunkOf(prop) {
+    const c = this.world.chunks.get(prop.chunk);
+    if (c) this.drawChunk(c);
   }
 
   get rememberedChunks() {
@@ -74,7 +77,7 @@ export class Minimap {
       d[i * 4 + 3] = 255;
     }
     for (const p of chunk.props) {
-      if (!p.def.collider) continue; // grass and flowers are not worth a dot
+      if (!p.def.collider) continue; // grass, flowers, items: not worth a dot
       const i = (p.ty - chunk.cy * n) * n + (p.tx - chunk.cx * n);
       d[i * 4] *= 0.55;
       d[i * 4 + 1] *= 0.55;
