@@ -43,7 +43,7 @@ describe('variantes de sol', () => {
     const grass = terrain.types.find((t) => t.key === 'grass');
     const counts = Array(grass.variants.length).fill(0);
     for (let i = 0; i < 1000; i++) counts[pickVariant(grass, i / 1000)]++;
-    expect(counts[6]).toBeGreaterThan(counts[7] * 4); // herbe simple fréquente, souche rare
+    expect(counts[0]).toBeGreaterThan(counts[1] * 4); // herbe simple fréquente, fleurie rare
     expect(pickVariant({ key: 'x' }, 0.99)).toBe(2); // 3 variantes par défaut
     const keys = new Set(buildCatalog(terrain.types).map((e) => e.key));
     grass.variants.forEach((_, v) => expect(keys.has(terrainTextureKey('grass', v))).toBe(true));

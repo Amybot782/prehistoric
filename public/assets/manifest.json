@@ -9,7 +9,7 @@
       "file": null
     },
     "tile_grass_0": {
-      "file": "assets/terrain/grass_0.png",
+      "file": "assets/terrain/raphael_herbe_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -39,12 +39,12 @@
       "originY": 0
     },
     "tile_dirt_0": {
-      "file": "assets/terrain/dirt_0.png",
+      "file": "assets/terrain/raphael_terre_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_dirt_1": {
-      "file": "assets/terrain/dirt_1.png",
+      "file": "assets/terrain/raphael_terre_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -89,7 +89,7 @@
       "originY": 0
     },
     "tile_grass_1": {
-      "file": "assets/terrain/grass_1.png",
+      "file": "assets/terrain/raphael_herbe_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
