@@ -94,7 +94,7 @@
       "originY": 0.5
     },
     "tile_grass_2": {
-      "file": "assets/terrain/grass_2.png",
+      "file": "assets/terrain/claude_herbe_3.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -189,12 +189,12 @@
       "originY": 0.5
     },
     "tile_grass_3": {
-      "file": "assets/terrain/grass_3.png",
+      "file": "assets/terrain/claude_herbe_4.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_grass_4": {
-      "file": "assets/terrain/grass_4.png",
+      "file": "assets/terrain/claude_herbe_5.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -210,6 +210,31 @@
     },
     "tile_grass_7": {
       "file": "assets/terrain/grass_7.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_dirt_3": {
+      "file": "assets/terrain/claude_terre_4.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_dirt_4": {
+      "file": "assets/terrain/claude_terre_5.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_stone_3": {
+      "file": "assets/terrain/claude_pierre_4.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_stone_4": {
+      "file": "assets/terrain/claude_pierre_5.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_stone_5": {
+      "file": "assets/terrain/claude_pierre_6.png",
       "originX": 0.5,
       "originY": 0.5
     }
