@@ -3,7 +3,11 @@
   "version": 1,
   "overrides": {
     "player": {
-      "file": null
+      "file": "assets/characters/joueur.png",
+      "frameWidth": 16,
+      "frameHeight": 26,
+      "originX": 0.5,
+      "originY": 0.9230769230769231
     },
     "prop_tree": {
       "file": null
