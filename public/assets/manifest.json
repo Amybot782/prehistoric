@@ -49,7 +49,7 @@
       "originY": 0.5
     },
     "tile_dirt_2": {
-      "file": "assets/terrain/dirt_2.png",
+      "file": "assets/terrain/raphael_terre_3.png",
       "originX": 0.5,
       "originY": 0.5
     },
@@ -149,17 +149,17 @@
       "originY": 0.5
     },
     "tile_stone_0": {
-      "file": "assets/terrain/stone_0.png",
+      "file": "assets/terrain/raphael_pierre_1.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_stone_1": {
-      "file": "assets/terrain/stone_1.png",
+      "file": "assets/terrain/raphael_pierre_2.png",
       "originX": 0.5,
       "originY": 0.5
     },
     "tile_stone_2": {
-      "file": "assets/terrain/stone_2.png",
+      "file": "assets/terrain/raphael_pierre_3.png",
       "originX": 0.5,
       "originY": 0.5
     },
