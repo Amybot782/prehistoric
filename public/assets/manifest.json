@@ -2,8 +2,191 @@
   "_comment": "Remplacement des graphismes provisoires. Pour utiliser une vraie image, renseigner 'file' (chemin relatif à ce dossier public) et, pour une planche d'animation, frameWidth/frameHeight. originX/originY (0 à 1) indiquent le point de l'image posé au sol. Sans 'file', le jeu génère le graphisme provisoire.",
   "version": 1,
   "overrides": {
-    "player": { "file": null },
-    "prop_tree": { "file": null },
-    "tile_grass_0": { "file": null }
+    "player": {
+      "file": null
+    },
+    "prop_tree": {
+      "file": null
+    },
+    "tile_grass_0": {
+      "file": "assets/terrain/grass_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_clay_0": {
+      "file": "assets/terrain/clay_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_clay_1": {
+      "file": "assets/terrain/clay_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_clay_2": {
+      "file": "assets/terrain/clay_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_clay_left": {
+      "file": "assets/terrain/clay_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_clay_right": {
+      "file": "assets/terrain/clay_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "tile_dirt_0": {
+      "file": "assets/terrain/dirt_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_dirt_1": {
+      "file": "assets/terrain/dirt_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_dirt_2": {
+      "file": "assets/terrain/dirt_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_dirt_left": {
+      "file": "assets/terrain/dirt_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_dirt_right": {
+      "file": "assets/terrain/dirt_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "tile_forest_floor_0": {
+      "file": "assets/terrain/forest_floor_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_forest_floor_1": {
+      "file": "assets/terrain/forest_floor_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_forest_floor_2": {
+      "file": "assets/terrain/forest_floor_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_forest_floor_left": {
+      "file": "assets/terrain/forest_floor_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_forest_floor_right": {
+      "file": "assets/terrain/forest_floor_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "tile_grass_1": {
+      "file": "assets/terrain/grass_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_2": {
+      "file": "assets/terrain/grass_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_grass_left": {
+      "file": "assets/terrain/grass_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_grass_right": {
+      "file": "assets/terrain/grass_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "tile_gravel_0": {
+      "file": "assets/terrain/gravel_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_gravel_1": {
+      "file": "assets/terrain/gravel_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_gravel_2": {
+      "file": "assets/terrain/gravel_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_gravel_left": {
+      "file": "assets/terrain/gravel_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_gravel_right": {
+      "file": "assets/terrain/gravel_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "tile_shallow_water_0": {
+      "file": "assets/terrain/shallow_water_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_shallow_water_1": {
+      "file": "assets/terrain/shallow_water_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_shallow_water_2": {
+      "file": "assets/terrain/shallow_water_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_stone_0": {
+      "file": "assets/terrain/stone_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_stone_1": {
+      "file": "assets/terrain/stone_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_stone_2": {
+      "file": "assets/terrain/stone_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "face_stone_left": {
+      "file": "assets/terrain/stone_left.png",
+      "originX": 1,
+      "originY": 0
+    },
+    "face_stone_right": {
+      "file": "assets/terrain/stone_right.png",
+      "originX": 0,
+      "originY": 0
+    },
+    "tile_water_0": {
+      "file": "assets/terrain/water_0.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_water_1": {
+      "file": "assets/terrain/water_1.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_water_2": {
+      "file": "assets/terrain/water_2.png",
+      "originX": 0.5,
+      "originY": 0.5
+    }
   }
 }
