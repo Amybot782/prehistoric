@@ -317,6 +317,36 @@
       "file": "assets/terrain/claude_shallow_water_right.png",
       "originX": 0,
       "originY": 0
+    },
+    "tile_grass_5": {
+      "file": "assets/terrain/claude_herbe_6.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_6": {
+      "file": "assets/terrain/claude_herbe_7.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_7": {
+      "file": "assets/terrain/claude_herbe_8.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_8": {
+      "file": "assets/terrain/claude_herbe_9.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_9": {
+      "file": "assets/terrain/claude_herbe_10.png",
+      "originX": 0.5,
+      "originY": 0.5
+    },
+    "tile_grass_10": {
+      "file": "assets/terrain/claude_herbe_11.png",
+      "originX": 0.5,
+      "originY": 0.5
     }
   }
 }
