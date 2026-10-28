@@ -72,10 +72,13 @@ src/
   core/              Boucle à pas fixe, journal, bus d'événements, aléatoire déterministe
   iso/               Projection isométrique, tri de profondeur
   physics/           Formes, index spatial, monde de collision
-  world/             État du monde (sol, objets), carte de test de la phase 1
+  world/             Monde par chunks, réglages et seed, choix du monde, zone de test
+    generation/      Bruit et générateur procédural (relief, eau, biomes, objets)
+    chunks/          Modifications du joueur par chunk (ce que la sauvegarde écrira)
   entities/          Entités simulées (joueur ; animaux et habitants plus tard)
   input/             Actions clavier configurables
-  render/            Rendu du sol, des objets, du joueur, caméra
+  render/            Rendu des chunks (sol, relief, objets), du joueur, caméra
+  ui/                Mini-carte
   assets/            Catalogue des textures, générateurs de graphismes provisoires
   scenes/            Scènes Phaser (démarrage, monde, interface)
   debug/             Outils de débogage visuels
@@ -87,15 +90,16 @@ docs/                Architecture, suivi, rapports de phase
 ```
 
 Dossiers prévus pour les phases suivantes (créés au moment où ils servent, pour ne pas afficher de systèmes vides) :
-`world/chunks`, `world/generation`, `ai/`, `pathfinding/`, `combat/`, `inventory/`, `crafting/`, `building/`,
-`tech/`, `tribe/`, `save/`, `settings/`, `audio/`, `ui/`.
+`ai/`, `pathfinding/`, `combat/`, `inventory/`, `crafting/`, `building/`,
+`tech/`, `tribe/`, `save/`, `settings/`, `audio/`.
 
 ## 6. Flux d'une image
 
 1. `InputMap` donne l'état des actions (touches physiques).
 2. `FixedStepClock.advance(delta)` indique combien de pas de 1/60 s exécuter (borné en cas de gros ralentissement).
-3. Chaque pas : `snapshot()` puis `Player.step()` → `CollisionWorld.moveCircle()`.
-4. Rendu : position interpolée, profondeur, caméra lissée (indépendante des FPS), visibilité des objets, débogage.
+3. Chaque pas : `snapshot()` puis `Player.step()` → `CollisionWorld.moveCircle()`, puis `followGround()` (hauteur du sol).
+4. Streaming : `ChunkedWorld.stream()` charge au plus 2 chunks par image autour de la vue et décharge les lointains.
+5. Rendu : position interpolée, profondeur, caméra calée au pixel, visibilité des objets, débogage ; mini-carte 5 fois par seconde.
 
 ## 7. Électron et sécurité
 
@@ -117,3 +121,28 @@ l'exécutable et le code Electron restent ceux du zip installé.
 - `game.json` porte `minShell` : une version qui a besoin d'un nouvel exécutable n'est pas installée
   automatiquement ; le joueur est prévenu.
 - Publication : `.github/workflows/release.yml` à chaque envoi sur `main` dont la version n'a pas encore de release (construction sur `windows-latest`).
+
+## 9. Monde procédural (phase 2)
+
+- **Déterministe** : chaque tuile est une fonction pure de (seed, réglages, coordonnées) — bruit simplex
+  à plusieurs octaves pour l'altitude, l'humidité et la température. Un chunk peut donc être généré dans
+  n'importe quel ordre, oublié puis régénéré à l'identique. Seules les modifications du joueur sont
+  conservées (`ChunkDeltaStore`, objets retirés et sols changés, avec export JSON pour la sauvegarde).
+- **Chunks** de 32×32 tuiles (`worldgen.json`). Chargement autour de la vue avec une marge de 12 tuiles,
+  déchargement au-delà de 28 tuiles, 2 chunks générés par image au maximum, les plus proches d'abord.
+  Un chunk se génère en 0,6 à 2 ms. Les colliders des chunks déchargés sont retirés (mémoire bornée, testé).
+- **Relief** en terrasses : 7 niveaux (0 = eau et rivages, puis 6 niveaux de terre), 8 px par niveau.
+  Deux tuiles voisines ne diffèrent jamais de plus d'un niveau (vérifié par test sur 3 seeds), donc tout
+  le relief se franchit à pied ; les falaises infranchissables viendront plus tard si besoin.
+- **Eau** : eau profonde (bloque) et eau peu profonde (praticable), plages de sable hors marais.
+- **Biomes** (`biomes.json`) : forêt tempérée, plaines, marais, montagnes rocheuses. Chaque biome donne
+  ses sols (par plaques) et ses objets (probabilité par tuile). Les objets ont un identifiant stable
+  `p<x>_<y>`, ce qui permet de savoir qu'un arbre coupé ne doit pas revenir.
+- **Réglages du monde** (`WorldSettings.js`) : seed, taille des biomes, relief, densité des forêts,
+  quantité d'eau, abondance des ressources. Ils seront proposés dans le menu de création (phase 7).
+- **Rendu** (`ChunkRenderer`) : le sol de chaque chunk est dessiné une fois dans une texture (un seul appel
+  de dessin par chunk), de l'arrière vers l'avant et à sa hauteur, avec un léger assombrissement des
+  niveaux bas. Les tuiles surélevées au bord d'un dénivelé sont en plus des sprites triés (dessus + parois),
+  pour cacher correctement ce qui est derrière elles. Textures et sprites sont recyclés (réserve plafonnée).
+- **Mini-carte** (`ui/Minimap.js`) : une petite image par chunk exploré (1 pixel par tuile), conservée après
+  déchargement, assemblée en vue isométrique autour du joueur.

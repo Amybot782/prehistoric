@@ -15,6 +15,14 @@ export function buildCatalog(terrainTypes) {
     { key: 'prop_tree', gen: 'tree', folder: 'vegetation' },
     { key: 'prop_pine', gen: 'pine', folder: 'vegetation' },
     { key: 'prop_bush', gen: 'bush', folder: 'vegetation' },
+    { key: 'prop_berry_bush', gen: 'berryBush', folder: 'vegetation' },
+    { key: 'prop_birch', gen: 'birch', folder: 'vegetation' },
+    { key: 'prop_swamp_tree', gen: 'swampTree', folder: 'vegetation' },
+    { key: 'prop_tall_grass', gen: 'tallGrass', folder: 'vegetation' },
+    { key: 'prop_reeds', gen: 'reeds', folder: 'vegetation' },
+    { key: 'prop_flowers', gen: 'flowers', folder: 'vegetation' },
+    { key: 'prop_outcrop', gen: 'outcrop', folder: 'terrain' },
+    { key: 'prop_flint', gen: 'flint', folder: 'terrain' },
     { key: 'prop_rock', gen: 'rock', folder: 'terrain' },
     { key: 'prop_boulder', gen: 'boulder', folder: 'terrain' },
     { key: 'prop_wall_x', gen: 'wallX', folder: 'buildings' },
@@ -24,11 +32,19 @@ export function buildCatalog(terrainTypes) {
     for (let v = 0; v < TERRAIN_VARIANTS; v++) {
       entries.push({ key: terrainTextureKey(t.key, v), gen: 'groundTile', args: [t.colors, v], folder: 'terrain' });
     }
+    for (const side of ['left', 'right']) {
+      entries.push({ key: faceTextureKey(t.key, side), gen: 'cliffFace', args: [t.face, side], folder: 'terrain' });
+    }
   }
   return entries;
 }
 
 export const TERRAIN_VARIANTS = 3;
+
+/** Side face of a raised tile ('left' = +y edge, 'right' = +x edge). */
+export function faceTextureKey(terrainKey, side) {
+  return `face_${terrainKey}_${side}`;
+}
 
 export function terrainTextureKey(terrainKey, variant) {
   return `tile_${terrainKey}_${variant}`;

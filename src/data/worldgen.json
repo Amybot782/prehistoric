@@ -1,0 +1,18 @@
+{
+  "_comment": "Réglages de génération. Les paramètres du joueur (0 = minimum, 1 = équilibré, 2 = maximum) multiplient ces valeurs de base.",
+  "chunkSize": 32,
+  "heightLevels": 6,
+  "levelHeight": 0.5,
+  "elevation": { "octaves": 5, "frequency": 0.0045, "contrast": 1.9 },
+  "humidity": { "octaves": 3, "frequency": 0.0035, "contrast": 1.7 },
+  "temperature": { "octaves": 3, "frequency": 0.002, "contrast": 1.5 },
+  "borderJitter": { "frequency": 0.09, "amount": 0.045 },
+  "seaLevel": 0.32,
+  "deepWaterMargin": 0.05,
+  "beachWidth": 0.025,
+  "mountainLevel": 0.72,
+  "swampHumidity": 0.6,
+  "swampMaxElevation": 0.48,
+  "forestHumidity": 0.46,
+  "streaming": { "marginTiles": 12, "unloadMarginTiles": 28, "chunksPerFrame": 2 }
+}

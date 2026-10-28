@@ -1,0 +1,54 @@
+{
+  "_comment": "Biomes de la V1. 'ground' : sol principal et variantes (part de la surface). 'props' : probabilité par tuile de chaque objet, multipliée par les réglages (forêts ou ressources). 'jitter' : décalage aléatoire des objets dans leur tuile.",
+  "biomes": [
+    {
+      "key": "temperate_forest",
+      "ground": [["forest_floor", 0.75], ["grass", 0.2], ["dirt", 0.05]],
+      "props": [
+        { "type": "tree", "chance": 0.14, "group": "forest" },
+        { "type": "pine", "chance": 0.05, "group": "forest" },
+        { "type": "birch", "chance": 0.04, "group": "forest" },
+        { "type": "bush", "chance": 0.04, "group": "forest" },
+        { "type": "berry_bush", "chance": 0.02, "group": "resource" },
+        { "type": "rock", "chance": 0.008, "group": "resource" },
+        { "type": "flint", "chance": 0.006, "group": "resource" },
+        { "type": "tall_grass", "chance": 0.02, "group": "resource" }
+      ]
+    },
+    {
+      "key": "plains",
+      "ground": [["grass", 0.88], ["dirt", 0.07], ["clay", 0.05]],
+      "props": [
+        { "type": "tree", "chance": 0.008, "group": "forest" },
+        { "type": "birch", "chance": 0.004, "group": "forest" },
+        { "type": "bush", "chance": 0.012, "group": "forest" },
+        { "type": "tall_grass", "chance": 0.06, "group": "resource" },
+        { "type": "berry_bush", "chance": 0.008, "group": "resource" },
+        { "type": "flowers", "chance": 0.03, "group": "decor" },
+        { "type": "rock", "chance": 0.006, "group": "resource" },
+        { "type": "flint", "chance": 0.01, "group": "resource" }
+      ]
+    },
+    {
+      "key": "swamp",
+      "ground": [["swamp_grass", 0.55], ["mud", 0.3], ["shallow_water", 0.15]],
+      "props": [
+        { "type": "swamp_tree", "chance": 0.06, "group": "forest" },
+        { "type": "reeds", "chance": 0.09, "group": "resource" },
+        { "type": "tall_grass", "chance": 0.03, "group": "resource" },
+        { "type": "bush", "chance": 0.015, "group": "forest" }
+      ]
+    },
+    {
+      "key": "rocky_mountains",
+      "ground": [["stone", 0.7], ["gravel", 0.25], ["dirt", 0.05]],
+      "props": [
+        { "type": "outcrop", "chance": 0.015, "group": "resource" },
+        { "type": "boulder", "chance": 0.012, "group": "resource" },
+        { "type": "rock", "chance": 0.025, "group": "resource" },
+        { "type": "flint", "chance": 0.02, "group": "resource" },
+        { "type": "pine", "chance": 0.03, "group": "forest" }
+      ]
+    }
+  ]
+}

@@ -135,10 +135,149 @@ export function bush() {
     if (-dx - dy + n > 0.9) return '#7fb954';
     return n > 0.6 ? '#4f8a35' : '#5d9c3e';
   });
-  pc.set(ax - 3, ay - 7, '#d24c4c');
-  pc.set(ax + 2, ay - 5, '#d24c4c');
   pc.outline('#1f3315');
   return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function berryBush() {
+  const pc = new PixelCanvas(20, 15);
+  const ax = 10, ay = 13;
+  pc.ellipse(ax, ay - 5, 8, 5.5, (dx, dy, x, y) => {
+    const n = hash2(x, y, 19);
+    if (-dx - dy + n > 0.9) return '#76ad4c';
+    return n > 0.6 ? '#46802f' : '#548f38';
+  });
+  for (let i = 0; i < 9; i++) {
+    const x = ax - 6 + Math.floor(hash2(i, 3, 23) * 12);
+    const y = ay - 9 + Math.floor(hash2(i, 4, 23) * 7);
+    if (pc.get(x, y) > 0) pc.set(x, y, i % 3 === 0 ? '#5a3a8f' : '#c93a3a');
+  }
+  pc.outline('#1f3315');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function birch() {
+  const pc = new PixelCanvas(26, 50);
+  const ax = 13, ay = 46;
+  pc.rect(ax - 1, ay - 20, 3, 20, '#e8e4d8');
+  for (let y = ay - 20; y < ay; y += 4) pc.set(ax - 1 + (y % 3), y, '#3b3a36');
+  const leaf = (dx, dy, x, y) => {
+    const n = hash2(x, y, 29);
+    const l = -dx * 0.6 - dy * 0.8 + n * 0.5;
+    return l > 0.55 ? '#b8d86a' : l > -0.1 ? '#8fbf4c' : '#6a9a38';
+  };
+  pc.ellipse(ax, ay - 31, 9, 13, leaf);
+  pc.outline('#24331a');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function swampTree() {
+  const pc = new PixelCanvas(34, 48);
+  const ax = 17, ay = 44;
+  pc.rect(ax - 2, ay - 18, 5, 18, '#4a3b2a');
+  pc.rect(ax - 4, ay - 3, 9, 3, '#4a3b2a'); // roots
+  const leaf = (dx, dy, x, y) => {
+    const n = hash2(x, y, 31);
+    return -dy + n * 0.6 > 0.6 ? '#6f8a44' : n > 0.5 ? '#4c6a32' : '#3f5a2a';
+  };
+  pc.ellipse(ax, ay - 28, 15, 9, leaf);
+  // Hanging moss
+  for (let i = 0; i < 10; i++) {
+    const x = ax - 13 + Math.floor(hash2(i, 5, 37) * 26);
+    const len = 4 + Math.floor(hash2(i, 6, 37) * 8);
+    for (let k = 0; k < len; k++) if (pc.get(x, ay - 22 + k) === 0 || k < 2) pc.set(x, ay - 22 + k, '#5d7a3c');
+  }
+  pc.outline('#1b2614');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function outcrop() {
+  const pc = new PixelCanvas(36, 52);
+  const ax = 18, ay = 40;
+  isoBox(pc, ax, ay, 0.46, 0.46, 1.6, { top: '#9a9b94', left: '#7a7b74', right: '#5f605a' });
+  // Jagged top
+  for (let i = 0; i < 5; i++) {
+    const x = ax - 10 + i * 5;
+    const h = 3 + Math.floor(hash2(i, 9, 41) * 6);
+    const base = ay - 26 - Math.abs(i - 2) * 2;
+    pc.polygon([{ x, y: base }, { x: x + 3, y: base - h }, { x: x + 6, y: base }], '#a7a8a0');
+  }
+  for (let i = 0; i < 30; i++) {
+    const x = Math.floor(hash2(i, 1, 43) * 34) + 1;
+    const y = Math.floor(hash2(i, 2, 43) * 48) + 2;
+    if (pc.get(x, y) > 0) pc.set(x, y, 'rgba(30,30,28,0.35)');
+  }
+  pc.outline('#262724');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function flint() {
+  const pc = new PixelCanvas(16, 9);
+  const ax = 8, ay = 7;
+  pc.ellipse(ax - 3, ay - 2, 3, 2, '#4b4f57');
+  pc.ellipse(ax + 3, ay - 1, 2.5, 1.8, '#5b6069');
+  pc.ellipse(ax, ay - 3, 2, 1.5, '#3c4048');
+  pc.set(ax - 4, ay - 3, '#9aa3b0');
+  pc.set(ax + 2, ay - 2, '#9aa3b0');
+  pc.outline('#1d1f23');
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function tallGrass() {
+  const pc = new PixelCanvas(18, 16);
+  const ax = 9, ay = 14;
+  for (let i = 0; i < 9; i++) {
+    const x = ax - 6 + Math.floor(hash2(i, 1, 47) * 13);
+    const h = 6 + Math.floor(hash2(i, 2, 47) * 7);
+    const lean = hash2(i, 3, 47) < 0.5 ? -1 : 1;
+    for (let k = 0; k < h; k++) pc.set(x + (k > h * 0.6 ? lean : 0), ay - k, k > h - 3 ? '#a8c45a' : '#6d9a3a');
+  }
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function reeds() {
+  const pc = new PixelCanvas(16, 22);
+  const ax = 8, ay = 20;
+  for (let i = 0; i < 6; i++) {
+    const x = ax - 5 + Math.floor(hash2(i, 1, 53) * 11);
+    const h = 12 + Math.floor(hash2(i, 2, 53) * 7);
+    for (let k = 0; k < h; k++) pc.set(x, ay - k, '#7d8f45');
+    if (i % 2 === 0) pc.rect(x - 1, ay - h - 3, 3, 4, '#6b4a2b'); // cattail head
+  }
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+export function flowers() {
+  const pc = new PixelCanvas(16, 8);
+  const ax = 8, ay = 6;
+  const colors = ['#f2d14b', '#e8e8f0', '#d76fb0', '#7fa8e8'];
+  for (let i = 0; i < 6; i++) {
+    const x = ax - 6 + Math.floor(hash2(i, 1, 59) * 12);
+    const y = ay - 4 + Math.floor(hash2(i, 2, 59) * 4);
+    pc.set(x, y + 1, '#4f7d2f');
+    pc.set(x, y, colors[i % colors.length]);
+  }
+  return { pc, originX: ax / pc.width, originY: ay / pc.height };
+}
+
+/**
+ * Side face of a raised tile, one height level tall (8 px). 'left' is the
+ * face along the tile's +y edge (bottom-left on screen), 'right' the +x edge.
+ * The origin is the tile centre at the top height.
+ */
+export function cliffFace(colors, side) {
+  const pc = new PixelCanvas(16, 16);
+  const pts = side === 'left'
+    ? [{ x: 0, y: 0 }, { x: 16, y: 8 }, { x: 16, y: 16 }, { x: 0, y: 8 }]
+    : [{ x: 0, y: 8 }, { x: 16, y: 0 }, { x: 16, y: 8 }, { x: 0, y: 16 }];
+  const base = side === 'left' ? colors[0] : colors[1];
+  pc.polygon(pts, (x, y) => (hash2(x, y, side === 'left' ? 61 : 67) > 0.8 ? shade(base, -0.15) : base));
+  // Lit top edge
+  for (let x = 0; x < 16; x++) {
+    const y = side === 'left' ? Math.floor(x / 2) : 8 - Math.ceil((x + 1) / 2);
+    pc.set(x, y, shade(base, 0.18));
+  }
+  return { pc, originX: side === 'left' ? 1 : 0, originY: 0 };
 }
 
 function wall(alongX) {
@@ -269,6 +408,15 @@ export const GENERATORS = {
   rock,
   boulder,
   bush,
+  berryBush,
+  birch,
+  swampTree,
+  outcrop,
+  flint,
+  tallGrass,
+  reeds,
+  flowers,
+  cliffFace,
   wallX,
   wallY,
   playerSheet,

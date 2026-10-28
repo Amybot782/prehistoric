@@ -1,8 +1,11 @@
 /**
  * End-to-end smoke test: serves the production build, opens it in Chromium
  * (Playwright) and drives the game with real keyboard and mouse events.
- * Checks movement in each direction, running, collisions with water, walls
- * and trees, zoom and the absence of runtime errors. Screenshots are written
+ * Part 1 uses the hand-built test area (?map=test): movement in each
+ * direction, running, collisions with water, walls and trees, relief, zoom,
+ * picking and camera stability. Part 2 uses procedural worlds: streaming
+ * while walking far, bounded memory, same seed = same world after a reload,
+ * new world (F9), minimap. Fails on any runtime error. Screenshots are written
  * to tests/e2e/screenshots/.
  *
  * Usage: npm run test:e2e   (needs the `playwright` package and Chromium)
@@ -55,7 +58,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto(url);
+  await page.goto(`${url}?map=test`);
   await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
   await page.waitForTimeout(500);
   const state = () => page.evaluate(() => window.__PREHISTORIC__.state());
@@ -144,6 +147,16 @@ try {
   await page.screenshot({ path: join(shots, '03-foret.png') });
   check('Aucune interpénétration dans la forêt', !overlapped);
 
+  // Relief: walking east onto the plateau raises the character one level, then two.
+  await teleport(26.5, 7.5);
+  await page.waitForTimeout(150);
+  const low = await state();
+  await hold(['KeyD', 'KeyS'], 1500); // screen right-down = world +x
+  const high = await state();
+  check('Montée sur le plateau (relief)', low.player.z === 0 && high.tile.height === 2 && Math.abs(high.player.z - 1) < 0.05,
+    `hauteur ${high.tile.height}, z=${high.player.z.toFixed(2)} à x=${high.player.x.toFixed(2)}`);
+  await page.screenshot({ path: join(shots, '03b-plateau.png') });
+
   // Zoom with the wheel.
   const z0 = (await state()).zoom;
   await page.mouse.move(640, 360);
@@ -204,9 +217,88 @@ try {
   check('Zoom de base adapté au 4K', k4.baseZoom === 6, `x${k4.baseZoom}`);
   await page.screenshot({ path: join(shots, '04-4k.png') });
 
-  check('Aucune erreur JavaScript', errors.length === 0, errors.join(' | '));
   const st = await state();
   console.log(`FPS mesurés dans le navigateur de test (rendu logiciel) : ${st.fps.toFixed(0)}`);
+
+  // ---- Part 2: procedural worlds ------------------------------------------
+  await page.setViewportSize({ width: 1600, height: 870 });
+  await page.goto(`${url}?seed=e2e-seed`);
+  await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
+  await page.waitForTimeout(800);
+  const start = await state();
+  check('Monde procédural chargé', start.world.mode === 'procedural' && start.world.seed === 'e2e-seed' && start.world.loadedChunks > 0 && !start.overlapping,
+    `départ (${start.player.x}, ${start.player.y}) ${start.tile.terrain}/${start.tile.biome}, ${start.world.loadedChunks} chunks`);
+  await page.screenshot({ path: join(shots, '05-monde-depart.png') });
+  const sample = () => page.evaluate(() => {
+    const out = [];
+    for (let y = -40; y < 40; y += 3) for (let x = -40; x < 40; x += 3) out.push(window.__PREHISTORIC__.tileAt(x, y));
+    return JSON.stringify(out);
+  });
+  const sig1 = await sample();
+
+  // Walk (run) a long way: chunks stream in and out, memory stays bounded.
+  let maxLoaded = 0, stuckFrames = 0, lastX = null;
+  await page.keyboard.down('ShiftLeft');
+  for (let leg = 0; leg < 3; leg++) {
+    const keys = [['KeyD'], ['KeyS'], ['KeyD', 'KeyS']][leg];
+    for (const k of keys) await page.keyboard.down(k);
+    for (let i = 0; i < 10; i++) {
+      await page.waitForTimeout(300);
+      const s1 = await state();
+      maxLoaded = Math.max(maxLoaded, s1.world.loadedChunks);
+      if (lastX !== null && Math.hypot(s1.player.x - lastX.x, s1.player.y - lastX.y) < 0.05) stuckFrames++;
+      lastX = { x: s1.player.x, y: s1.player.y };
+    }
+    for (const k of keys) await page.keyboard.up(k);
+  }
+  await page.keyboard.up('ShiftLeft');
+  const walked = await state();
+  check('Marche longue : chargement et déchargement des chunks', walked.world.unloaded > 0 && maxLoaded <= 40 && !walked.overlapping,
+    `générés ${walked.world.generated}, déchargés ${walked.world.unloaded}, max chargés ${maxLoaded}, streaming ${walked.world.streamMs.toFixed(2)} ms/image (bloqué ${stuckFrames}/30 mesures)`);
+  await page.screenshot({ path: join(shots, '06-apres-marche.png') });
+
+  // Far teleport: the area is generated immediately and the player lands on its ground height.
+  await teleport(5000.5, -3000.5);
+  await page.waitForTimeout(300);
+  const far = await state();
+  check('Téléportation lointaine', far.world.loadedChunks > 0 && far.tile.terrain !== null && Math.abs(far.player.z - far.tile.height * 0.5) < 0.01,
+    `${far.tile.terrain}/${far.tile.biome} hauteur ${far.tile.height}`);
+
+  // Look for each biome to take a picture of it.
+  const found = {};
+  for (let i = 0; i < 60 && Object.keys(found).length < 4; i++) {
+    const x = 300 + (i % 8) * 260 + 0.5, y = -900 + Math.floor(i / 8) * 260 + 0.5;
+    await teleport(x, y);
+    const s2 = await state();
+    if (s2.tile.biome && !found[s2.tile.biome] && !['water', 'shallow_water'].includes(s2.tile.terrain)) {
+      found[s2.tile.biome] = true;
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: join(shots, `07-biome-${s2.tile.biome}.png`) });
+    }
+  }
+  check('Les 4 biomes trouvés en jeu', Object.keys(found).length === 4, Object.keys(found).join(', '));
+
+  // Same seed after a reload: identical terrain.
+  await page.reload();
+  await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
+  await page.waitForTimeout(500);
+  const sig2 = await sample();
+  check('Même seed = même monde après rechargement', sig1 === sig2 && sig1.includes('ground'));
+
+  // F9: a new random world, then M hides the minimap without errors.
+  await page.keyboard.press('F9');
+  await page.waitForTimeout(1200);
+  const nw = await state();
+  check('Nouveau monde (F9)', nw.world.seed !== 'e2e-seed' && nw.world.loadedChunks > 0 && !nw.overlapping, `seed ${nw.world.seed}`);
+  await page.screenshot({ path: join(shots, '08-nouveau-monde.png') });
+  await page.keyboard.press('F7');
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: join(shots, '09-bordures-chunks.png') });
+  await page.keyboard.press('F7');
+  await page.keyboard.press('KeyM');
+  await page.waitForTimeout(300);
+
+  check('Aucune erreur JavaScript', errors.length === 0, errors.join(' | '));
 } finally {
   await browser.close();
   server.close();

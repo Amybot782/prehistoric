@@ -31,7 +31,9 @@ Si le fichier est absent ou illisible, le jeu utilise le graphisme provisoire et
 | `player` | characters | Planche du personnage (16×26 par image) |
 | `shadow` | effects | Ombre au sol |
 | `ui_tile_cursor` | ui | Curseur de tuile |
-| `prop_tree`, `prop_pine`, `prop_bush` | vegetation | Arbres, buisson |
-| `prop_rock`, `prop_boulder` | terrain | Rochers |
+| `prop_tree`, `prop_pine`, `prop_birch`, `prop_swamp_tree` | vegetation | Arbres (feuillu, pin, bouleau, arbre des marais) |
+| `prop_bush`, `prop_berry_bush`, `prop_tall_grass`, `prop_reeds`, `prop_flowers` | vegetation | Buissons, baies, hautes herbes, roseaux, fleurs |
+| `prop_rock`, `prop_boulder`, `prop_outcrop`, `prop_flint` | terrain | Rochers, gros bloc, affleurement, silex |
 | `prop_wall_x`, `prop_wall_y` | buildings | Pièces de mur (deux orientations) |
-| `tile_<sol>_<0..2>` | terrain | Trois variantes par type de sol (`grass`, `dirt`, `sand`, `water`, `stone`) |
+| `tile_<sol>_<0..2>` | terrain | Trois variantes par type de sol (`grass`, `dirt`, `sand`, `water`, `stone`, `shallow_water`, `forest_floor`, `mud`, `swamp_grass`, `gravel`, `clay`) |
+| `face_<sol>_left`, `face_<sol>_right` | terrain | Parois d'une tuile surélevée (16×16 px, côté gauche et côté droit, 8 px de haut par niveau) |

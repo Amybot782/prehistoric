@@ -13,9 +13,10 @@ const STRIDE_TILES = 0.3; // distance covered per animation frame
 const WALK_CYCLE = [1, 2, 3, 2];
 
 export class PlayerView {
-  constructor(scene, player, projection, origins, collisions) {
+  constructor(scene, player, projection, origins, world) {
     this.player = player;
-    this.collisions = collisions;
+    this.world = world;
+    this.collisions = world?.collisions;
     this._near = [];
     this._neighbours = [];
     this._box = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
@@ -26,7 +27,7 @@ export class PlayerView {
     this.sprite = scene.add.sprite(0, 0, 'player', 0).setOrigin(o.x, o.y);
     this.screen = { x: 0, y: 0 };
     this.depth = 0;
-    this._w = { x: 0, y: 0 };
+    this._w = { x: 0, y: 0, z: 0 };
   }
 
   /**
@@ -35,7 +36,7 @@ export class PlayerView {
    */
   update(alpha, snap = (v) => v) {
     const w = this.player.interpolated(alpha, this._w);
-    const s = this.proj.worldToScreen(w.x, w.y, this.player.z, this.screen);
+    const s = this.proj.worldToScreen(w.x, w.y, w.z, this.screen);
     s.x = snap(s.x);
     s.y = snap(s.y);
     this.depth = this.computeDepth(w.x, w.y);
@@ -53,8 +54,9 @@ export class PlayerView {
 
   /** Centre-rule depth corrected against nearby props (see resolveDynamicDepth). */
   computeDepth(x, y) {
-    const base = objectDepth(x, y, 0, 0.5);
+    let base = objectDepth(x, y, 0, 0.5);
     if (!this.collisions) return base;
+    base = Math.max(base, this.reliefFloor(x, y));
     const r = this.player.radius;
     const box = this._box;
     box.minX = x - r; box.maxX = x + r; box.minY = y - r; box.maxY = y + r;
@@ -67,5 +69,24 @@ export class PlayerView {
       list.push({ box: shapeBounds(c.shape), depth: objectDepth(prop.x, prop.y) });
     }
     return resolveDynamicDepth(box, base, list);
+  }
+
+  /**
+   * Raised tiles are sorted sprites (see ChunkRenderer). Those the player
+   * stands on or above must never cover the character, even when its centre
+   * is near their back edge.
+   */
+  reliefFloor(x, y) {
+    const w = this.world;
+    const level = Math.round(this.player.z / w.levelHeight + 0.2);
+    let floor = -Infinity;
+    const tx0 = Math.floor(x), ty0 = Math.floor(y);
+    for (let ty = ty0 - 1; ty <= ty0 + 1; ty++) {
+      for (let tx = tx0 - 1; tx <= tx0 + 1; tx++) {
+        const h = w.heightAt(tx, ty);
+        if (h > 0 && h <= level) floor = Math.max(floor, objectDepth(tx + 0.25, ty + 0.25) + 0.01);
+      }
+    }
+    return floor;
   }
 }

@@ -4,8 +4,9 @@
 
 | Version | Date | Contenu | Statut |
 |---|---|---|---|
-| 0.1.2 | 2026-10-28 | Mise à jour automatique depuis GitHub Releases, retour à la version précédente en cas d'échec, publication automatique sur Windows | En cours de publication |
-| 0.1.1 | 2026-10-28 | Correction du tremblement de l'image pendant la marche (zoom entier, caméra calée au pixel sur le joueur) | En attente de validation |
+| 0.2.0 | 2026-10-28 | Phase 2 — Monde procédural : chunks, seed, relief, eau, 4 biomes, ressources naturelles, mini-carte | En attente de validation |
+| 0.1.2 | 2026-10-28 | Mise à jour automatique depuis GitHub Releases, retour à la version précédente en cas d'échec, publication automatique sur Windows | Installée par Raphael ; phase 1 validée |
+| 0.1.1 | 2026-10-28 | Correction du tremblement de l'image pendant la marche (zoom entier, caméra calée au pixel sur le joueur) | Incluse dans 0.1.2 |
 | 0.1.0 | 2026-10-28 | Phase 1 — Fondations techniques | Lancée par Raphael sur Windows ; tremblement signalé |
 
 ## Fonctionnalités terminées (testées)
@@ -21,17 +22,20 @@
 - Caméra calée au pixel près sur le joueur, zoom entier (molette et clavier), zoom de base adapté à la résolution (jusqu'au 4K).
 - Outils de débogage : panneau F3, collisions F4, grille F6, journal en mémoire et sur disque.
 - Assets remplaçables par manifeste, graphismes provisoires générés, repli automatique si un fichier manque.
-- Carte de test de 48×48 tuiles (forêt, étang, chemin, enclos avec porte, passages étroits).
+- Zone de test de 48×48 tuiles (forêt, étang, chemin, enclos avec porte, passages étroits, plateau à deux marches), via `?map=test`.
 - Mise à jour automatique au lancement (GitHub Releases), avec vérification d'empreinte et retour arrière.
-- 56 tests unitaires et 18 vérifications de bout en bout dans Chromium (dont la stabilité de la caméra en marchant).
+- Monde procédural infini par chunks de 32×32, seed reproductible, réglages du monde (taille des biomes, relief, forêts, eau, ressources).
+- Relief en terrasses franchissables, eau profonde / peu profonde, plages ; 4 biomes ; 15 types d'objets naturels.
+- Chargement et déchargement progressifs des chunks, modifications du joueur conservées (prêtes pour la sauvegarde).
+- Mini-carte des zones explorées (M), bordures de chunks (F7), nouveau monde (F9).
+- 75 tests unitaires et 25 vérifications de bout en bout dans Chromium.
 
 ## Fonctionnalités en cours
 
-- Aucune (phase 1 livrée, en attente de validation).
+- Aucune (phase 2 livrée, en attente de validation).
 
 ## Fonctionnalités futures (V1)
 
-- Phase 2 : monde procédural par chunks, seed, relief, premiers biomes, ressources naturelles, eau, mini-carte.
 - Phase 3 : survie (santé, faim, soif, endurance, température), récolte, inventaire, équipements.
 - Phase 4 : craft instantané, ateliers, construction pièce par pièce, sauvegarde des constructions.
 - Phase 5 : animaux et dinosaures, combat, esquive, réapparition.
@@ -40,8 +44,12 @@
 
 ## Bugs connus et limitations
 
-- 0.1.0 s'ouvre sur Windows (confirmé par Raphael) ; la correction 0.1.1 reste à confirmer sur son PC.
+- Phase 2 non encore essayée sur le PC de Raphael (performances réelles inconnues).
+- Pas encore de rivières : seulement des lacs, des mers et des marais.
+- Les objets ne se récoltent pas encore (phase 3) ; le monde n'est pas encore sauvegardé sur disque (phase 7), seule la seed est retenue.
+- Pas de menu de création de monde (phase 7) : F9 et la seed par défaut le remplacent.
+- La grille de débogage (F6) est dessinée au niveau 0 : décalée sur les hauteurs.
 - Pas d'installateur (NSIS demande Wine pour être produit depuis Linux) ni d'icône personnalisée : la version est un dossier à extraire.
 - Les performances n'ont pas été mesurées sur un vrai PC (seulement en rendu logiciel dans un conteneur).
 - Les angles de l'enclos de test ne sont pas raccordés visuellement (pièces de mur provisoires).
-- La carte de test est bornée ; le monde infini arrive en phase 2.
+- Les montagnes ont beaucoup de rochers ; densités à ajuster selon les retours.

@@ -1,14 +1,53 @@
 {
   "_comment": "Codes physiques (KeyboardEvent.code) : ils désignent la position de la touche, pas sa lettre. KeyW/KeyA/KeyS/KeyD correspondent donc à ZQSD sur un clavier AZERTY et à WASD sur un clavier QWERTY.",
-  "moveUp": ["KeyW", "ArrowUp"],
-  "moveDown": ["KeyS", "ArrowDown"],
-  "moveLeft": ["KeyA", "ArrowLeft"],
-  "moveRight": ["KeyD", "ArrowRight"],
-  "run": ["ShiftLeft", "ShiftRight"],
-  "debugOverlay": ["F3"],
-  "debugColliders": ["F4"],
-  "debugGrid": ["F6"],
-  "zoomIn": ["Equal", "NumpadAdd"],
-  "zoomOut": ["Minus", "NumpadSubtract"],
-  "zoomReset": ["Digit0", "Numpad0"]
+  "moveUp": [
+    "KeyW",
+    "ArrowUp"
+  ],
+  "moveDown": [
+    "KeyS",
+    "ArrowDown"
+  ],
+  "moveLeft": [
+    "KeyA",
+    "ArrowLeft"
+  ],
+  "moveRight": [
+    "KeyD",
+    "ArrowRight"
+  ],
+  "run": [
+    "ShiftLeft",
+    "ShiftRight"
+  ],
+  "debugOverlay": [
+    "F3"
+  ],
+  "debugColliders": [
+    "F4"
+  ],
+  "debugGrid": [
+    "F6"
+  ],
+  "zoomIn": [
+    "Equal",
+    "NumpadAdd"
+  ],
+  "zoomOut": [
+    "Minus",
+    "NumpadSubtract"
+  ],
+  "zoomReset": [
+    "Digit0",
+    "Numpad0"
+  ],
+  "debugChunks": [
+    "F7"
+  ],
+  "debugNewWorld": [
+    "F9"
+  ],
+  "toggleMinimap": [
+    "KeyM"
+  ]
 }

@@ -2,7 +2,7 @@ import { DepthLayer } from '../iso/depth.js';
 
 /**
  * World-space debug drawing: colliders (as they exist in the logical world,
- * projected to the screen) and the tile grid. Only the area around the
+ * projected to the screen), the tile grid and chunk borders. Only the area around the
  * camera is drawn, and only when the corresponding toggle is on.
  */
 export class DebugDraw {
@@ -12,6 +12,7 @@ export class DebugDraw {
     this.g = scene.add.graphics().setDepth(DepthLayer.OVERLAY);
     this.showColliders = false;
     this.showGrid = false;
+    this.showChunks = false;
     this._a = { x: 0, y: 0 };
     this._b = { x: 0, y: 0 };
     this._list = [];
@@ -19,12 +20,12 @@ export class DebugDraw {
 
   draw(view, player) {
     this.g.clear();
-    if (!this.showColliders && !this.showGrid) return;
+    if (!this.showColliders && !this.showGrid && !this.showChunks) return;
     const p = this.proj;
     // World area covering the view: un-project the 4 view corners.
     const corners = [
       p.screenToWorld(view.x, view.y), p.screenToWorld(view.right, view.y),
-      p.screenToWorld(view.x, view.bottom), p.screenToWorld(view.right, view.bottom),
+      p.screenToWorld(view.x, view.bottom + 64), p.screenToWorld(view.right, view.bottom + 64),
     ];
     const minX = Math.floor(Math.min(...corners.map((c) => c.x))) - 1;
     const maxX = Math.ceil(Math.max(...corners.map((c) => c.x))) + 1;
@@ -32,13 +33,16 @@ export class DebugDraw {
     const maxY = Math.ceil(Math.max(...corners.map((c) => c.y))) + 1;
 
     if (this.showGrid) {
+      // Drawn at ground level 0: on raised ground the lines appear shifted down.
       this.g.lineStyle(1, 0xffffff, 0.18);
-      for (let x = Math.max(0, minX); x <= Math.min(this.world.width, maxX); x++) {
-        this.line(x, Math.max(0, minY), x, Math.min(this.world.height, maxY));
-      }
-      for (let y = Math.max(0, minY); y <= Math.min(this.world.height, maxY); y++) {
-        this.line(Math.max(0, minX), y, Math.min(this.world.width, maxX), y);
-      }
+      for (let x = minX; x <= maxX; x++) this.line(x, minY, x, maxY);
+      for (let y = minY; y <= maxY; y++) this.line(minX, y, maxX, y);
+    }
+    if (this.showChunks) {
+      const n = this.world.size;
+      this.g.lineStyle(1, 0xffd84d, 0.8);
+      for (let x = Math.floor(minX / n) * n; x <= maxX; x += n) this.line(x, minY, x, maxY);
+      for (let y = Math.floor(minY / n) * n; y <= maxY; y += n) this.line(minX, y, maxX, y);
     }
     if (this.showColliders) {
       const list = this.world.collisions.hash.query(minX, minY, maxX, maxY, this._list);

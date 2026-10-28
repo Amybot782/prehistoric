@@ -1,10 +1,18 @@
 {
-  "_comment": "Objets du décor. Le collider est exprimé en tuiles monde, relatif au centre de la tuile. 'texture' renvoie au manifeste d'assets.",
-  "tree": { "texture": "prop_tree", "collider": { "type": "circle", "r": 0.22 }, "occludes": true },
-  "pine": { "texture": "prop_pine", "collider": { "type": "circle", "r": 0.2 }, "occludes": true },
-  "rock": { "texture": "prop_rock", "collider": { "type": "circle", "r": 0.38 }, "occludes": false },
-  "boulder": { "texture": "prop_boulder", "collider": { "type": "aabb", "hw": 0.45, "hh": 0.45 }, "occludes": true },
-  "bush": { "texture": "prop_bush", "collider": null, "occludes": false },
-  "wall_x": { "texture": "prop_wall_x", "collider": { "type": "aabb", "hw": 0.5, "hh": 0.12 }, "occludes": true },
-  "wall_y": { "texture": "prop_wall_y", "collider": { "type": "aabb", "hw": 0.12, "hh": 0.5 }, "occludes": true }
+  "_comment": "Objets du décor. collider en tuiles monde, relatif au centre de l'objet ; 'texture' renvoie au catalogue d'assets ; 'yields' = ressources obtenues à la récolte (phase 3) ; 'regrows' = repousse (phase 3).",
+  "tree": { "texture": "prop_tree", "collider": { "type": "circle", "r": 0.22 }, "occludes": true, "yields": { "wood": 6 }, "regrows": true },
+  "pine": { "texture": "prop_pine", "collider": { "type": "circle", "r": 0.2 }, "occludes": true, "yields": { "wood": 5, "resin": 1 }, "regrows": true },
+  "birch": { "texture": "prop_birch", "collider": { "type": "circle", "r": 0.18 }, "occludes": true, "yields": { "wood": 4 }, "regrows": true },
+  "swamp_tree": { "texture": "prop_swamp_tree", "collider": { "type": "circle", "r": 0.24 }, "occludes": true, "yields": { "wood": 5 }, "regrows": true },
+  "rock": { "texture": "prop_rock", "collider": { "type": "circle", "r": 0.38 }, "occludes": false, "yields": { "stone": 4 } },
+  "boulder": { "texture": "prop_boulder", "collider": { "type": "aabb", "hw": 0.45, "hh": 0.45 }, "occludes": true, "yields": { "stone": 10 } },
+  "outcrop": { "texture": "prop_outcrop", "collider": { "type": "aabb", "hw": 0.48, "hh": 0.48 }, "occludes": true, "yields": { "stone": 14, "flint": 2 } },
+  "flint": { "texture": "prop_flint", "collider": null, "occludes": false, "yields": { "flint": 2 } },
+  "bush": { "texture": "prop_bush", "collider": null, "occludes": false, "yields": { "fiber": 1 }, "regrows": true },
+  "berry_bush": { "texture": "prop_berry_bush", "collider": null, "occludes": false, "yields": { "berries": 4 }, "regrows": true },
+  "tall_grass": { "texture": "prop_tall_grass", "collider": null, "occludes": false, "yields": { "fiber": 2 }, "regrows": true },
+  "reeds": { "texture": "prop_reeds", "collider": null, "occludes": false, "yields": { "reed": 3 }, "regrows": true },
+  "flowers": { "texture": "prop_flowers", "collider": null, "occludes": false, "yields": {} },
+  "wall_x": { "texture": "prop_wall_x", "collider": { "type": "aabb", "hw": 0.5, "hh": 0.12 }, "occludes": true, "yields": {} },
+  "wall_y": { "texture": "prop_wall_y", "collider": { "type": "aabb", "hw": 0.12, "hh": 0.5 }, "occludes": true, "yields": {} }
 }

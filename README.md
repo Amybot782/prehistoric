@@ -44,7 +44,7 @@ npm run dist:win     :: produit release\win-unpacked\Prehistoric.exe
 `npm run test:e2e` lance un test de bout en bout dans Chromium ; il nécessite en plus
 `npm i -D playwright` puis `npx playwright install chromium`.
 
-## Commandes (phase 1)
+## Commandes
 
 | Action | Touches |
 |---|---|
@@ -54,9 +54,18 @@ npm run dist:win     :: produit release\win-unpacked\Prehistoric.exe
 | Panneau de débogage | F3 |
 | Afficher les collisions | F4 |
 | Afficher la grille | F6 |
+| Afficher les bordures de chunks | F7 |
+| Nouveau monde aléatoire (provisoire, en attendant le menu) | F9 |
+| Mini-carte | M |
 | Plein écran (application) | F11 |
 
 Les touches sont définies par position physique : la même configuration donne ZQSD sur AZERTY et WASD sur QWERTY.
+
+## Choisir le monde (en attendant le menu de la phase 7)
+
+Au premier lancement, le jeu ouvre le monde de seed `prehistoric`, puis rouvre le dernier monde joué.
+F9 crée un nouveau monde avec une seed aléatoire (affichée dans le panneau F3).
+En développement : `?seed=texte` ouvre une seed précise, `?map=test` la zone de test de la phase 1.
 
 ## Organisation
 
