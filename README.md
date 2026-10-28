@@ -18,6 +18,17 @@ n'est pas signée : « Informations complémentaires » puis « Exécuter quand 
 
 Les journaux et (à partir de la phase 7) les sauvegardes sont dans `%APPDATA%\Prehistoric\`.
 
+### Mises à jour automatiques
+
+À chaque lancement, le jeu regarde la dernière version publiée dans l'onglet *Releases* du dépôt GitHub.
+Si elle est plus récente, il la télécharge (environ 2 Mo), vérifie son empreinte puis la lance : il n'y a plus
+de dossier à remplacer. Sans connexion, le jeu démarre normalement avec la version déjà installée.
+Si une nouvelle version ne démarre pas, le jeu revient tout seul à la précédente et ne la réinstalle plus.
+
+Publier une version (développeur) : mettre à jour `version` dans `package.json`, écrire `docs/releases/vX.Y.Z.md`,
+puis pousser l'étiquette `vX.Y.Z`. Le workflow `.github/workflows/release.yml` construit le jeu sur Windows,
+lance les tests et publie `game.asar`, `game.json` et le zip Windows complet.
+
 ### Depuis le code source (développement)
 
 Prérequis : [Node.js 20 ou plus récent](https://nodejs.org/).

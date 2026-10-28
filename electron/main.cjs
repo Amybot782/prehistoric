@@ -8,9 +8,22 @@
 const { app, BrowserWindow, protocol, net, ipcMain, shell, session } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
-const { pathToFileURL } = require('node:url');
+const { Updater } = require('./updater.cjs');
+const updateConfig = require('./update-config.json');
 
-const DIST = path.join(__dirname, '..', 'dist');
+const BUNDLED_DIST = path.join(__dirname, '..', 'dist');
+// Folder (or downloaded game.asar) the game is served from; set at startup.
+let gameRoot = BUNDLED_DIST;
+let gameInfo = { version: null, source: 'bundled', updatedTo: null, rolledBack: false, needsNewShell: null };
+let updater = null;
+
+const MIME = {
+  '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ogg': 'audio/ogg',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.woff2': 'font/woff2', '.svg': 'image/svg+xml',
+};
+
+const SPLASH = `<!doctype html><html lang="fr"><meta charset="utf-8"><body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#10140f;color:#d8e0c8;font:18px monospace"><div id="m">Recherche de mise à jour…</div></body></html>`;
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -93,8 +106,51 @@ function createWindow() {
     }
   });
 
-  win.loadURL('app://game/index.html');
   return win;
+}
+
+/**
+ * Picks the game version, looks for an update (packaged app only, unless
+ * --no-update), then loads the game. Never blocks the game on a network error.
+ */
+function argValue(name) {
+  const hit = process.argv.find((a) => a.startsWith(`${name}=`));
+  return hit ? hit.slice(name.length + 1) : undefined;
+}
+
+async function startGame(win) {
+  gameInfo.version = app.getVersion();
+  const allowUpdates = (app.isPackaged || process.argv.includes('--check-updates')) && !process.argv.includes('--no-update');
+  if (allowUpdates) {
+    try {
+      updater = new Updater({
+        dir: userDir('game'),
+        bundledVersion: app.getVersion(),
+        owner: updateConfig.owner,
+        repo: updateConfig.repo,
+        log: (level, message) => mainLog(level, message),
+        // Test servers are only accepted in development builds.
+        apiBase: !app.isPackaged ? argValue('--update-api') : undefined,
+      });
+      const start = updater.startup();
+      if (start.root) gameRoot = start.root;
+      Object.assign(gameInfo, { version: start.version, source: start.source, rolledBack: start.rolledBack });
+      await win.loadURL('app://game/__splash.html');
+      const result = await updater.checkAndInstall(gameInfo.version, (v) => {
+        win.webContents.executeJavaScript(`document.getElementById('m').textContent = 'Mise à jour vers la version ${v}…'`).catch(() => {});
+      });
+      if (result?.installed) {
+        gameRoot = result.root;
+        Object.assign(gameInfo, { version: result.installed, source: 'downloaded', updatedTo: result.installed });
+      } else if (result?.needsNewShell) {
+        gameInfo.needsNewShell = result.needsNewShell;
+      }
+    } catch (err) {
+      mainLog('warn', `Mise à jour impossible pour l'instant : ${err.message}`);
+    }
+  }
+  mainLog('info', `Jeu ${gameInfo.version} (${gameInfo.source === 'downloaded' ? 'version téléchargée' : 'version incluse'})`);
+  win.loadURL('app://game/index.html');
 }
 
 if (!app.requestSingleInstanceLock()) {
@@ -109,11 +165,19 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(() => {
-    protocol.handle('app', (request) => {
+    protocol.handle('app', async (request) => {
       const { pathname } = new URL(request.url);
-      const target = path.normalize(path.join(DIST, decodeURIComponent(pathname)));
-      if (!target.startsWith(DIST + path.sep)) return new Response('Interdit', { status: 403 });
-      return net.fetch(pathToFileURL(target).toString());
+      if (pathname === '/__splash.html') return new Response(SPLASH, { headers: { 'content-type': 'text/html' } });
+      const target = path.normalize(path.join(gameRoot, decodeURIComponent(pathname)));
+      if (!target.startsWith(gameRoot + path.sep)) return new Response('Interdit', { status: 403 });
+      try {
+        // Electron's fs reads inside .asar archives, so the same code serves the
+        // bundled dist folder and a downloaded game.asar.
+        const data = await fs.promises.readFile(target);
+        return new Response(data, { headers: { 'content-type': MIME[path.extname(target)] ?? 'application/octet-stream' } });
+      } catch {
+        return new Response('Introuvable', { status: 404 });
+      }
     });
     // No camera, microphone, notifications... the game asks for nothing.
     session.defaultSession.setPermissionRequestHandler((_wc, _perm, cb) => cb(false));
@@ -122,15 +186,27 @@ if (!app.requestSingleInstanceLock()) {
       if (validEntry(entry)) writeLog(entry);
     });
     ipcMain.handle('app-info', () => ({
-      version: app.getVersion(),
+      version: gameInfo.version,
+      shellVersion: app.getVersion(),
       packaged: app.isPackaged,
+      update: { ...gameInfo },
       savesDir: userDir('saves'),
       logsDir: userDir('logs'),
     }));
+    ipcMain.on('game-ready', () => {
+      if (updater && gameInfo.source === 'downloaded') {
+        try {
+          updater.confirm();
+        } catch (err) {
+          mainLog('warn', 'Impossible de confirmer la version', { message: err.message });
+        }
+      }
+    });
 
     userDir('saves');
     mainLog('info', `Démarrage ${app.getVersion()} (${process.platform}, Electron ${process.versions.electron})`);
-    createWindow();
+    const win = createWindow();
+    startGame(win);
   });
 
   app.on('window-all-closed', () => {

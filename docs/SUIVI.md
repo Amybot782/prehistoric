@@ -4,6 +4,7 @@
 
 | Version | Date | Contenu | Statut |
 |---|---|---|---|
+| 0.1.2 | 2026-10-28 | Mise à jour automatique depuis GitHub Releases, retour à la version précédente en cas d'échec, publication automatique sur Windows | En cours de publication |
 | 0.1.1 | 2026-10-28 | Correction du tremblement de l'image pendant la marche (zoom entier, caméra calée au pixel sur le joueur) | En attente de validation |
 | 0.1.0 | 2026-10-28 | Phase 1 — Fondations techniques | Lancée par Raphael sur Windows ; tremblement signalé |
 
@@ -21,7 +22,8 @@
 - Outils de débogage : panneau F3, collisions F4, grille F6, journal en mémoire et sur disque.
 - Assets remplaçables par manifeste, graphismes provisoires générés, repli automatique si un fichier manque.
 - Carte de test de 48×48 tuiles (forêt, étang, chemin, enclos avec porte, passages étroits).
-- 45 tests unitaires et 18 vérifications de bout en bout dans Chromium (dont la stabilité de la caméra en marchant).
+- Mise à jour automatique au lancement (GitHub Releases), avec vérification d'empreinte et retour arrière.
+- 56 tests unitaires et 18 vérifications de bout en bout dans Chromium (dont la stabilité de la caméra en marchant).
 
 ## Fonctionnalités en cours
 

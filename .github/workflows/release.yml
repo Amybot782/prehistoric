@@ -1,0 +1,50 @@
+# Publie une version du jeu quand une étiquette vX.Y.Z est poussée.
+# Construit sur un vrai Windows, lance les tests, puis crée la release GitHub
+# avec : game.asar + game.json (mise à jour automatique dans le jeu) et le zip
+# Windows complet (première installation).
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Vérifier que l'étiquette correspond à package.json
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "L'étiquette $GITHUB_REF_NAME ne correspond pas à package.json ($version)"; exit 1
+          fi
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run dist:win
+
+      - name: Zip Windows complet
+        shell: pwsh
+        run: Compress-Archive -Path release/win-unpacked/* -DestinationPath "release/Prehistoric-$($env:GITHUB_REF_NAME.TrimStart('v'))-win-x64.zip"
+
+      - name: Créer la release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="docs/releases/$GITHUB_REF_NAME.md"
+          [ -f "$notes" ] || notes=/dev/null
+          gh release create "$GITHUB_REF_NAME" \
+            release/game.asar release/game.json release/Prehistoric-*-win-x64.zip \
+            --title "Prehistoric $GITHUB_REF_NAME" --notes-file "$notes"

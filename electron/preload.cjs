@@ -7,4 +7,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('prehistoric', {
   log: (entry) => ipcRenderer.send('log', entry),
   appInfo: () => ipcRenderer.invoke('app-info'),
+  gameReady: () => ipcRenderer.send('game-ready'),
 });

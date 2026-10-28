@@ -1,7 +1,7 @@
 {
   "name": "prehistoric",
   "productName": "Prehistoric",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Jeu de survie et de civilisation préhistorique en pixel art isométrique",
   "type": "module",
   "main": "electron/main.cjs",
@@ -15,10 +15,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vite build && node tests/e2e/smoke.mjs",
-    "dist:win": "vite build && electron-builder --win --x64 --dir"
+    "dist:win": "vite build && node scripts/package-game.mjs && electron-builder --win --x64 --dir",
+    "package:game": "vite build && node scripts/package-game.mjs"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@electron/asar": "^3.4.1",
     "electron": "^38.8.6",
     "electron-builder": "^26.18.0",
     "phaser": "3.90.0",

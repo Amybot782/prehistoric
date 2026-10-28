@@ -19,5 +19,8 @@
   "terrain.dirt": "terre",
   "terrain.sand": "sable",
   "terrain.water": "eau",
-  "terrain.stone": "pierre"
+  "terrain.stone": "pierre",
+  "update.installed": "Jeu mis à jour : version {version}",
+  "update.rolledBack": "La dernière mise à jour ne démarrait pas : retour à la version précédente",
+  "update.needsNewShell": "La version {version} est disponible, mais elle doit être téléchargée en entier depuis GitHub"
 }

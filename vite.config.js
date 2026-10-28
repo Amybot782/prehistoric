@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
+    __APP_VERSION__: JSON.stringify(process.env.PREHISTORIC_VERSION ?? process.env.npm_package_version ?? '0.0.0'),
   },
   test: {
     include: ['tests/unit/**/*.test.js'],

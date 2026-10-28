@@ -75,6 +75,8 @@ export class WorldScene extends Phaser.Scene {
     this.scene.launch('UI', { worldScene: this });
     log.info(`Monde de test prêt : ${this.world.props.length} objets, ${this.world.collisions.staticCount} colliders`);
     this.exposeDebugApi();
+    // Tells the desktop app the game started, so a freshly installed update is kept.
+    window.prehistoric?.gameReady?.();
   }
 
   update(_time, delta) {

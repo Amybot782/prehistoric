@@ -33,9 +33,39 @@ export class UIScene extends Phaser.Scene {
       this.showDebug = !this.showDebug;
       this.panel.setVisible(this.showDebug);
     });
+    this.version = this.add.text(0, 0, `v${__APP_VERSION__}`, {
+      fontFamily: 'Consolas, "DejaVu Sans Mono", monospace',
+      color: 'rgba(232,240,216,0.6)',
+    }).setOrigin(1, 1);
+    this.notice = this.add.text(0, 0, '', {
+      fontFamily: 'Consolas, "DejaVu Sans Mono", monospace',
+      color: '#fff3c4',
+      backgroundColor: 'rgba(40,52,24,0.9)',
+      padding: { x: 10, y: 6 },
+    }).setOrigin(0.5, 0).setVisible(false);
+    this.showUpdateNotice();
     this.layout();
     this.scale.on('resize', () => this.layout());
     this.nextRefresh = 0;
+  }
+
+  /** Tells the player when the desktop app installed (or undid) an update. */
+  async showUpdateNotice() {
+    const bridge = window.prehistoric;
+    if (!bridge?.appInfo) return;
+    try {
+      const info = await bridge.appInfo();
+      const u = info?.update ?? {};
+      let msg = null;
+      if (u.updatedTo) msg = t('update.installed', { version: u.updatedTo });
+      else if (u.rolledBack) msg = t('update.rolledBack');
+      else if (u.needsNewShell) msg = t('update.needsNewShell', { version: u.needsNewShell });
+      if (!msg) return;
+      this.notice.setText(msg).setVisible(true);
+      this.time.delayedCall(8000, () => this.notice.setVisible(false));
+    } catch {
+      // Information only: never block the game.
+    }
   }
 
   layout() {
@@ -44,6 +74,8 @@ export class UIScene extends Phaser.Scene {
     const fs = `${Math.round(13 * ui)}px`;
     this.panel.setFontSize(fs).setPosition(Math.round(8 * ui), Math.round(8 * ui));
     this.hint.setFontSize(fs).setPosition(width / 2, height - Math.round(8 * ui));
+    this.version.setFontSize(fs).setPosition(width - Math.round(8 * ui), height - Math.round(8 * ui));
+    this.notice.setFontSize(fs).setPosition(width / 2, Math.round(8 * ui));
   }
 
   update(time) {

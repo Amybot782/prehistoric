@@ -103,3 +103,17 @@ Dossiers prévus pour les phases suivantes (créés au moment où ils servent, p
 - Le jeu est servi par `app://game/` (lecture limitée au dossier `dist`), aucune navigation externe, aucune permission accordée.
 - Passerelle `window.prehistoric` : `log(entrée)` (validée côté principal) et `appInfo()`.
 - Journaux : `%APPDATA%\Prehistoric\logs\prehistoric-AAAA-MM-JJ.log`. Sauvegardes : `%APPDATA%\Prehistoric\saves\`.
+
+## 8. Mises à jour
+
+Seul le jeu (le dossier `dist`, empaqueté en un fichier `game.asar` d'environ 2 Mo) est mis à jour ;
+l'exécutable et le code Electron restent ceux du zip installé.
+
+- `electron/updater-core.cjs` : règles pures (choix de la version, retour arrière, versions refusées), testées.
+- `electron/updater.cjs` : appels à l'API GitHub, téléchargement, contrôle taille + SHA-256, écriture atomique.
+- État dans `%APPDATA%\Prehistoric\game\state.json`. Une version installée reste « non confirmée » tant que
+  le jeu n'a pas signalé son démarrage (`gameReady`). Si elle échoue au lancement suivant, retour à la version
+  précédente et blocage de la version fautive.
+- `game.json` porte `minShell` : une version qui a besoin d'un nouvel exécutable n'est pas installée
+  automatiquement ; le joueur est prévenu.
+- Publication : `.github/workflows/release.yml` sur étiquette `vX.Y.Z` (construction sur `windows-latest`).
