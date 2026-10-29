@@ -13,6 +13,7 @@
     "testMapAir": 18
   },
   "actions": { "reach": 1.35, "hitCooldown": 0.55, "drinkCooldown": 0.7, "drinkAmount": 12, "eatCooldown": 0.35, "baseHitPower": 1, "buildReach": 4.5 },
+  "combat": { "fists": { "damage": 4, "reach": 0.7, "cooldown": 0.45, "knockback": 2 }, "arc": 1.0, "staminaCost": 4, "throwCost": 6, "throwCooldown": 0.6, "fightRange": 3, "dodge": { "speed": 10, "seconds": 0.22, "cooldown": 0.6, "stamina": 14 }, "hurtInvulnerable": 0.25 },
   "respawn": { "delay": 3, "minHunger": 50, "minThirst": 50 },
   "inventory": { "slots": 24, "hotbar": 8 }
 }

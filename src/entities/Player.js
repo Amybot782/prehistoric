@@ -3,8 +3,8 @@ import { Entity } from './Entity.js';
 /**
  * Player-controlled character. Movement accelerates towards the desired
  * velocity, so starts and stops are snappy but not jerky, and all values come
- * from src/data/game.json. Running has no stamina cost yet: stamina belongs
- * to the survival systems of phase 3.
+ * from src/data/game.json. Stamina for running and dodging is handled by
+ * PlayerSurvival.
  */
 export class Player extends Entity {
   constructor(x, y, cfg) {
@@ -16,6 +16,25 @@ export class Player extends Entity {
     // Last movement direction in world space: what the character faces (actions).
     this.dirX = 1;
     this.dirY = 0;
+    this.dodgeLeft = 0; // seconds of dodge left: fast, untouchable, no steering
+    this.loud = 0; // seconds during which an action (a hit) makes noise
+  }
+
+  get invulnerable() {
+    return this.dodgeLeft > 0;
+  }
+
+  /** Loudness heard by animals: running is loud, standing still almost silent. */
+  get noise() {
+    if (this.loud > 0) return 1.2;
+    return this.running ? 1 : this.moving ? 0.5 : 0.15;
+  }
+
+  /** Starts a dodge along a normalised world direction. */
+  startDodge(dx, dy, speed, seconds) {
+    this.dodgeLeft = seconds;
+    this.vx = dx * speed;
+    this.vy = dy * speed;
   }
 
   /**
@@ -27,6 +46,17 @@ export class Player extends Entity {
    * @param {import('../iso/projection.js').IsoProjection} projection
    */
   step(dt, dir, run, collisions, projection) {
+    this.loud = Math.max(0, this.loud - dt);
+    if (this.dodgeLeft > 0) {
+      this.dodgeLeft = Math.max(0, this.dodgeLeft - dt);
+      const ox = this.x, oy = this.y;
+      collisions.moveCircle(this, this.vx * dt, this.vy * dt);
+      const moved = Math.hypot(this.x - ox, this.y - oy);
+      this.distanceWalked += moved;
+      this.moving = moved > 1e-4;
+      if (this.dodgeLeft === 0) { this.vx *= 0.3; this.vy *= 0.3; }
+      return;
+    }
     const hasInput = dir.x !== 0 || dir.y !== 0;
     this.running = hasInput && run;
     const speed = this.running ? this.cfg.runSpeed : this.cfg.walkSpeed;

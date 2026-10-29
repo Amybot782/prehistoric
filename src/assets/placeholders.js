@@ -1,5 +1,6 @@
 import { PixelCanvas, shade } from './PixelCanvas.js';
 import { hash2 } from '../core/random.js';
+import { creatureSheet, creatureDead } from './creatureArt.js';
 
 /**
  * Generators for provisional pixel art. Each generator returns a PixelCanvas
@@ -420,6 +421,27 @@ export function itemIcon(shape, [a, b]) {
       pc.rect(2, 4, 12, 2, b);
       pc.set(6, 8, b); pc.set(10, 9, b);
       break;
+    case 'spear':
+      for (let i = 0; i < 11; i++) pc.set(2 + i, 14 - i, a);
+      for (let i = 0; i < 11; i++) pc.set(3 + i, 14 - i, shade(a, -0.25));
+      pc.polygon([{ x: 11, y: 4 }, { x: 15, y: 1 }, { x: 13, y: 6 }], b);
+      pc.rect(10, 5, 2, 2, '#c9b27a');
+      break;
+    case 'club':
+      for (let i = 0; i < 8; i++) pc.rect(3 + i, 14 - i, 2, 1, a);
+      pc.ellipse(11, 5, 3.6, 3.6, (dx, dy) => (-dx - dy > 0.4 ? shade(b, 0.2) : b));
+      pc.rect(8, 8, 2, 2, '#c9b27a');
+      break;
+    case 'meat':
+      pc.ellipse(9, 8, 5.5, 4.5, (dx, dy) => (-dx - dy > 0.6 ? shade(a, 0.2) : a));
+      pc.rect(2, 11, 5, 2, b);
+      pc.ellipse(2.5, 12, 1.6, 1.8, b);
+      break;
+    case 'cloak':
+      pc.polygon([{ x: 5, y: 2 }, { x: 11, y: 2 }, { x: 15, y: 14 }, { x: 1, y: 14 }], a);
+      pc.rect(5, 2, 6, 2, b);
+      for (let x = 2; x < 15; x += 3) pc.set(x, 13, b);
+      break;
     default:
       pc.rect(4, 4, 8, 8, '#ff00ff');
   }
@@ -758,4 +780,6 @@ export const GENERATORS = {
   standingStone,
   pieceIcon,
   playerSheet,
+  creatureSheet,
+  creatureDead,
 };

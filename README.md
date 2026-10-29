@@ -60,6 +60,10 @@ npm run dist:win     :: produit release\win-unpacked\Prehistoric.exe
 | Tourner la pièce | R |
 | Ouvrir / fermer une porte | E |
 | Démonter une construction | X (elle revient dans l'inventaire) |
+| Frapper un animal | clic gauche vers lui (quand un animal est à moins de 3 cases) |
+| Lancer l'arme en main (lance, pierre) | clic droit vers la cible |
+| Esquiver | Espace (dans la direction des touches, sinon droit devant) |
+| Dépecer une carcasse | E maintenu |
 | Zoom | Molette, `+` / `-`, `0` pour revenir au zoom par défaut |
 | Panneau de débogage | F3 |
 | Afficher les collisions | F4 |

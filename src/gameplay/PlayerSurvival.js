@@ -7,16 +7,19 @@ import { craftBlocker, consumeCost, stationsNear } from '../crafting/crafting.js
 import { checkPlacement, spotAt } from '../building/placement.js';
 import { circleVsShape } from '../physics/shapes.js';
 import { EventBus } from '../core/EventBus.js';
+import { strikeTargets } from '../creatures/combat.js';
 
 /**
  * The player's survival loop: needs, inventory, equipment and actions on
  * the world (harvest, pick up, drink, eat, drop, craft, build, open doors,
- * dismantle), plus death and respawn.
+ * dismantle), combat (strike, throw, dodge, being hurt), death and respawn.
  * No Phaser here: the scene feeds it input and the interface listens to
  * `events`:
  *   gain {item, count}   message {key, params}   hit {prop, depleted}
  *   death {cause}        respawn                 drink
  *   built {prop}         dismantled {prop}       crafting (open the menu)
+ *   swing {dirX, dirY, reach, hit}   hurt {amount, cause}   dodge
+ * `creatures` (the CreatureSystem) is set by that system when it starts.
  */
 export class PlayerSurvival {
   constructor({ world, player, cfg, itemDefs, biomeKeys, recipes = { recipes: [], stationRange: 3 } }) {
@@ -34,6 +37,11 @@ export class PlayerSurvival {
     this.cooldown = 0; // between actions on the world
     this.eatCooldown = 0;
     this.deadFor = 0;
+    this.attackCd = 0;
+    this.dodgeCd = 0;
+    this.hurtCd = 0;
+    this.creatures = null;
+    this._wasDead = false;
     this.target = null;
     this.water = null;
     this.dismantleTarget = null;
@@ -56,19 +64,115 @@ export class PlayerSurvival {
 
   /** One fixed simulation step, after the player moved. */
   step(dt) {
-    const wasDead = this.dead;
     this.cooldown = Math.max(0, this.cooldown - dt);
     this.eatCooldown = Math.max(0, this.eatCooldown - dt);
+    this.attackCd = Math.max(0, this.attackCd - dt);
+    this.dodgeCd = Math.max(0, this.dodgeCd - dt);
+    this.hurtCd = Math.max(0, this.hurtCd - dt);
     const p = this.player;
     this.vitals.step(dt, {
       running: p.running,
       airTemp: airTemperature(this.world, p.x, p.y, this.cfg, this.biomeKeys),
       insulation: this.equipment.insulation(),
     });
+    // Kept between steps: a creature's bite can kill between two survival steps.
     if (this.dead) {
       this.deadFor += dt;
-      if (!wasDead) this.events.emit('death', { cause: this.vitals.lastDamage });
+      if (!this._wasDead) this.events.emit('death', { cause: this.vitals.lastDamage });
     }
+    this._wasDead = this.dead;
+  }
+
+  // ---- Combat ------------------------------------------------------------------
+
+  /** Stats of the weapon in hand (an item with 'weapon'), else the fists. */
+  weapon() {
+    return this.defs[this.equipment.slots.hand]?.weapon ?? this.cfg.combat.fists;
+  }
+
+  /** True when a living creature is close enough for a click to mean a strike. */
+  inFight() {
+    const p = this.player, r = this.cfg.combat.fightRange;
+    return !!this.creatures?.creatures.some((c) => !c.dead && Math.hypot(c.x - p.x, c.y - p.y) <= r);
+  }
+
+  /** Melee strike towards a world direction (the mouse). Returns 'hit', 'miss' or null. */
+  attack(dirX, dirY) {
+    if (this.dead || this.attackCd > 0 || this.player.invulnerable) return null;
+    const c = this.cfg.combat;
+    const w = this.weapon();
+    if (!this.vitals.spendStamina(c.staminaCost)) {
+      this.attackCd = w.cooldown;
+      this.message('action.tooTired');
+      return 'tired';
+    }
+    const l = Math.hypot(dirX, dirY) || 1;
+    dirX /= l; dirY /= l;
+    const p = this.player;
+    p.dirX = dirX; p.dirY = dirY;
+    p.loud = 0.6;
+    this.attackCd = w.cooldown;
+    const hit = strikeTargets(p, dirX, dirY, w.reach, c.arc, this.creatures?.creatures ?? [], this.world.collisions)[0] ?? null;
+    if (hit) this.creatures.hurtByPlayer(hit, w.damage, dirX * w.knockback, dirY * w.knockback);
+    this.events.emit('swing', { dirX, dirY, reach: w.reach, hit });
+    return hit ? 'hit' : 'miss';
+  }
+
+  /** Throws the item in hand (spear, stone) towards a world direction. */
+  throwHeld(dirX, dirY) {
+    if (this.dead || this.attackCd > 0 || !this.creatures || this.player.invulnerable) return null;
+    const item = this.equipment.slots.hand;
+    const spec = this.defs[item]?.throw;
+    if (!spec) {
+      this.message('combat.cannotThrow');
+      return null;
+    }
+    const c = this.cfg.combat;
+    if (!this.vitals.spendStamina(c.throwCost)) {
+      this.attackCd = c.throwCooldown;
+      this.message('action.tooTired');
+      return 'tired';
+    }
+    // The hand takes the next one from the bag, if any.
+    if (this.inventory.count(item) > 0) this.inventory.remove(item, 1);
+    else {
+      this.equipment.slots.hand = null;
+      this.equipment.version++;
+    }
+    const p = this.player;
+    const l = Math.hypot(dirX, dirY) || 1;
+    p.dirX = dirX / l; p.dirY = dirY / l;
+    this.attackCd = c.throwCooldown; // a throw is quiet: the prey may be hit before it hears anything
+    return this.creatures.throwFrom(p, dirX, dirY, item, spec);
+  }
+
+  /** Quick dash along a direction; untouchable while it lasts. */
+  dodge(dirX, dirY) {
+    if (this.dead || this.dodgeCd > 0 || this.player.invulnerable) return false;
+    const d = this.cfg.combat.dodge;
+    if (!this.vitals.spendStamina(d.stamina)) {
+      this.message('action.tooTired');
+      this.dodgeCd = d.cooldown;
+      return false;
+    }
+    const l = Math.hypot(dirX, dirY) || 1;
+    this.player.startDodge(dirX / l, dirY / l, d.speed, d.seconds);
+    this.dodgeCd = d.cooldown;
+    this.events.emit('dodge');
+    return true;
+  }
+
+  /** Damage from a creature. Ignored while dodging and just after a hit. Returns true when it landed. */
+  takeDamage(amount, cause, kx = 0, ky = 0) {
+    if (this.dead || this.player.invulnerable || this.hurtCd > 0) return false;
+    const v = this.vitals;
+    v.health = Math.max(0, v.health - amount);
+    v.lastDamage = cause;
+    this.player.vx += kx;
+    this.player.vy += ky;
+    this.hurtCd = this.cfg.combat.hurtInvulnerable;
+    this.events.emit('hurt', { amount, cause });
+    return true;
   }
 
   /** Chooses what an action would apply to (call once per frame). */
@@ -325,6 +429,7 @@ export class PlayerSurvival {
     this.vitals.revive(r.minHunger, r.minThirst);
     this.deadFor = 0;
     this.player.placeAt(x, y, z);
+    this.player.dodgeLeft = 0;
     this.events.emit('respawn');
   }
 }

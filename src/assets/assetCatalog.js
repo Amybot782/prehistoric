@@ -7,7 +7,7 @@ import { GENERATORS } from './placeholders.js';
  * (or sprite sheet) instead. Anything missing or failing to load falls back
  * to the placeholder, and the problem is logged.
  */
-export function buildCatalog(terrainTypes, items = {}) {
+export function buildCatalog(terrainTypes, items = {}, species = {}) {
   const entries = [
     { key: 'player', gen: 'playerSheet', folder: 'characters' },
     { key: 'shadow', gen: 'shadow', folder: 'effects' },
@@ -46,6 +46,11 @@ export function buildCatalog(terrainTypes, items = {}) {
     { key: 'prop_fiber_mat', gen: 'fiberMat', folder: 'buildings' },
     { key: 'prop_standing_stone', gen: 'standingStone', folder: 'buildings' },
   ];
+  for (const [k, sp] of Object.entries(species)) {
+    const folder = sp.class === 'dinosaur' ? 'dinosaurs' : 'animals';
+    entries.push({ key: `creature_${k}`, gen: 'creatureSheet', args: [k], folder });
+    entries.push({ key: `creature_${k}_dead`, gen: 'creatureDead', args: [k], folder });
+  }
   for (const t of terrainTypes) {
     for (let v = 0; v < variantWeights(t).length; v++) {
       entries.push({ key: terrainTextureKey(t.key, v), gen: 'groundTile', args: [t.colors, v], folder: 'terrain' });

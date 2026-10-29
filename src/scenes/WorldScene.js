@@ -8,6 +8,7 @@ import bindings from '../data/keybindings.json';
 import items from '../data/items.json';
 import survivalCfg from '../data/survival.json';
 import recipes from '../data/recipes.json';
+import creaturesCfg from '../data/creatures.json';
 import { IsoProjection } from '../iso/projection.js';
 import { FixedStepClock } from '../core/FixedStepClock.js';
 import { InputMap } from '../input/InputMap.js';
@@ -17,6 +18,8 @@ import { TestMapGenerator } from '../world/testMap.js';
 import { resolveWorldChoice, rememberWorld, newRandomWorldSettings } from '../world/worldSession.js';
 import { Player } from '../entities/Player.js';
 import { PlayerSurvival } from '../gameplay/PlayerSurvival.js';
+import { CreatureSystem, carcassDefs } from '../creatures/CreatureSystem.js';
+import { CreatureLayer } from '../render/CreatureLayer.js';
 import { ChunkRenderer, propDepth } from '../render/ChunkRenderer.js';
 import { PlayerView } from '../render/PlayerView.js';
 import { CameraController } from '../render/CameraController.js';
@@ -67,7 +70,7 @@ export class WorldScene extends Phaser.Scene {
     this.world = new ChunkedWorld({
       generator,
       terrainTypes: terrain.types,
-      propDefs: props,
+      propDefs: { ...props, ...carcassDefs(creaturesCfg) },
       physicsCfg: gameCfg.physics,
       levelHeight: worldgen.levelHeight,
       streaming: worldgen.streaming,
@@ -86,6 +89,14 @@ export class WorldScene extends Phaser.Scene {
       log.info(`Sauvegarde chargée (${saved.savedAt})`);
     }
     this.survival.events.on('crafting', () => this.events.emit('open-crafting'));
+    // Animals live in procedural worlds; the test area stays empty unless a test adds some.
+    this.creatures = new CreatureSystem({
+      world: this.world, player: this.player, survival: this.survival, cfg: creaturesCfg, biomeKeys: BIOME_KEYS,
+      seed: hashSeed(choice.settings.seed), spawning: choice.mode === 'procedural',
+    });
+    if (choice.mode === 'procedural') this.creatures.populate(12);
+    this.survival.events.on('hurt', () => { this.hurtFlash = 0.18; });
+    this.creatures.events.on('killed', ({ creature }) => log.info(`Créature tuée : ${creature.species}`));
     this.saveTimer = 0;
     this.saveNow = () => this.save();
     window.addEventListener('beforeunload', this.saveNow);
@@ -94,6 +105,8 @@ export class WorldScene extends Phaser.Scene {
 
     this.chunkView = new ChunkRenderer(this, this.world, this.projection, origins);
     this.playerView = new PlayerView(this, this.player, this.projection, origins, this.world);
+    this.creatureView = new CreatureLayer(this, this.creatures, this.survival, this.projection, origins, this.world);
+    this.hurtFlash = 0;
     const co = origins.ui_tile_cursor ?? { x: 0.5, y: 0.5 };
     this.cursor = this.add.image(0, 0, 'ui_tile_cursor').setOrigin(co.x, co.y).setDepth(DepthLayer.OVERLAY - 1);
     // Marks the object or water an action would apply to.
@@ -102,7 +115,11 @@ export class WorldScene extends Phaser.Scene {
     this.ghost = this.add.image(0, 0, '__DEFAULT').setAlpha(0.65).setVisible(false);
     // A quick click can start and end between two frames: remember it until the next update.
     this._clicked = false;
-    this.input.on('pointerdown', (ptr) => { if (ptr.leftButtonDown()) this._clicked = true; });
+    this._rightClicked = false;
+    this.input.on('pointerdown', (ptr) => {
+      if (ptr.leftButtonDown()) this._clicked = true;
+      if (ptr.rightButtonDown()) this._rightClicked = true;
+    });
     this.debugDraw = new DebugDraw(this, this.world, this.projection);
 
     this.cameraCtl = new CameraController(this.cameras.main, gameCfg.camera);
@@ -129,6 +146,7 @@ export class WorldScene extends Phaser.Scene {
       this.inputMap.detach(window);
       this.scale.off('resize', onResize);
       this.chunkView.destroy();
+      this.creatureView.destroy();
       this.scene.stop('UI');
     });
     this.scene.launch('UI', { worldScene: this });
@@ -156,6 +174,12 @@ export class WorldScene extends Phaser.Scene {
     for (let i = 0; i < 8; i++) if (input.justPressed(`hotbar${i + 1}`)) sv.selectHotbar(i);
     if (input.justPressed('useItem')) sv.useSelected();
     if (input.justPressed('dropItem')) sv.dropSlot(sv.selected, input.isDown('run') ? Infinity : 1);
+    if (input.justPressed('dodge')) {
+      // Along the keys held, else straight ahead.
+      const a = input.moveAxes(this._axes);
+      const d = a.x || a.y ? this.projection.screenDirToWorld(a.x, a.y, this._dir) : { x: this.player.dirX, y: this.player.dirY };
+      sv.dodge(d.x, d.y);
+    }
     if (input.justPressed('zoomIn')) this.cameraCtl.zoomBy(1);
     if (input.justPressed('zoomOut')) this.cameraCtl.zoomBy(-1);
     if (input.justPressed('zoomReset')) this.cameraCtl.resetZoom();
@@ -176,12 +200,14 @@ export class WorldScene extends Phaser.Scene {
       p.step(dt, dir, input.isDown('run') && sv.vitals.canRun(), this.world.collisions, this.projection);
       p.followGround(this.world.groundZ(p.x, p.y), dt);
       sv.step(dt);
+      this.creatures.step(dt);
       this.world.time += dt;
     }
     this.regrowTimer += steps * dt;
     if (this.regrowTimer >= 2) {
       this.regrowTimer = 0;
       this.world.updateRegrowth();
+      this.world.updateTransients();
     }
     this.saveTimer += steps * dt;
     if (this.saveTimer >= AUTOSAVE_SECONDS) this.save();
@@ -190,6 +216,10 @@ export class WorldScene extends Phaser.Scene {
 
     // Rendering: interpolated between the last two simulation states.
     this.playerView.update(this.clock.alpha, this.snap);
+    this.hurtFlash = Math.max(0, this.hurtFlash - delta / 1000);
+    if (this.hurtFlash > 0) this.playerView.sprite.setTint(0xff5050);
+    else this.playerView.sprite.setAlpha(this.player.invulnerable ? 0.6 : 1).clearTint();
+    this.creatureView.update(this.clock.alpha, this.snap);
     this.cameraCtl.follow(this.playerView.screen.x, this.playerView.screen.y);
     const view = this.currentView();
     const t0 = performance.now();
@@ -220,13 +250,22 @@ export class WorldScene extends Phaser.Scene {
     sv.updateTarget(hovered);
     const clicking = ptr.isDown && ptr.leftButtonDown() && !overUi && this.mouseOnCanvas;
     const clicked = this._clicked && !overUi;
+    const rightClicked = this._rightClicked && !overUi && this.mouseOnCanvas;
     this._clicked = false;
+    this._rightClicked = false;
     // With a building piece in hand, a click builds instead of harvesting.
     const pv = !overUi && this.mouseOnCanvas && this.cursor.visible ? sv.previewAt(this.mouse.x, this.mouse.y) : null;
     sv.preview = pv;
     this.updateGhost(pv);
     if (pv && clicked) sv.placeAt(this.mouse.x, this.mouse.y);
-    if (this.inputMap.isDown('interact') || (clicking && !pv && !sv.selectedPiece())) sv.interact();
+    // Aim: towards the mouse on the ground, else where the character faces.
+    const p = this.player;
+    const ax = this.cursor.visible ? this.mouse.x - p.x : p.dirX, ay = this.cursor.visible ? this.mouse.y - p.y : p.dirY;
+    if (rightClicked) sv.throwHeld(ax, ay);
+    // Near a creature a click strikes it; elsewhere it harvests as before.
+    const fighting = (clicking || clicked) && !pv && !sv.selectedPiece() && sv.inFight();
+    if (fighting) sv.attack(ax, ay);
+    if (this.inputMap.isDown('interact') || (clicking && !sv.inFight() && !pv && !sv.selectedPiece())) sv.interact();
     const tg = sv.target;
     const w = sv.water;
     if (tg || w) {
@@ -268,6 +307,7 @@ export class WorldScene extends Phaser.Scene {
     const { x, y } = this.spawn;
     this.streamAround(x, y, Infinity);
     this.survival.respawn(x, y, this.world.groundZ(x, y));
+    this.creatures.onPlayerRespawn(x, y);
     log.info('Réapparition au point de départ');
   }
 
@@ -395,6 +435,7 @@ export class WorldScene extends Phaser.Scene {
       render: this.chunkView.stats,
       overlapping: w.collisions.overlaps(p.x, p.y, p.radius - 1e-3),
       survival: this.survivalState(),
+      creatures: this.creatures.creatures.length,
     };
   }
 
@@ -405,7 +446,7 @@ export class WorldScene extends Phaser.Scene {
     for (const s of sv.inventory.slots) if (s) counts[s.item] = (counts[s.item] ?? 0) + s.count;
     return {
       health: v.health, hunger: v.hunger, thirst: v.thirst, stamina: v.stamina, bodyTemp: v.bodyTemp, airTemp: v.airTemp,
-      exhausted: v.exhausted, dead: sv.dead, status: v.status, items: counts, slots: sv.inventory.toJSON(), equipment: { ...sv.equipment.slots }, selected: sv.selected,
+      exhausted: v.exhausted, dead: sv.dead, lastDamage: v.lastDamage, status: v.status, items: counts, slots: sv.inventory.toJSON(), equipment: { ...sv.equipment.slots }, selected: sv.selected,
       target: sv.target ? { id: sv.target.id, type: sv.target.type, hpLeft: sv.target.hpLeft } : null,
       water: !!sv.water, worldTime: this.world.time,
       preview: sv.preview ? { type: sv.preview.type, x: sv.preview.spot.x, y: sv.preview.spot.y, rot: sv.preview.spot.rot, why: sv.preview.why } : null,
@@ -480,9 +521,23 @@ export class WorldScene extends Phaser.Scene {
         return { x: r.x + 40, y: r.y + 10 * panel.hud.s, open: panel.open };
       },
       logs: () => logger.entries.slice(-50),
+      // Equips an item from the bag (what a right click in the inventory does).
+      equip: (item) => this.survival.useSlot(this.survival.inventory.slots.findIndex((x) => x?.item === item)),
+      spawnCreature: (species, x, y) => this.creatures.spawn(species, x, y).id,
+      creatures: () => this.creatures.creatures.map((c) => ({ id: c.id, species: c.species, x: c.x, y: c.y, hp: c.hp, state: c.state, target: c.target === this.player ? 'player' : c.target?.species ?? null })),
+      clearCreatures: () => { for (const c of [...this.creatures.creatures]) this.creatures.remove(c); },
+      setSpawning: (on) => { this.creatures.spawning = !!on; },
+      projectiles: () => this.creatures.projectiles.length,
       renderProbe: () => this.renderProbe(),
     };
   }
+}
+
+/** Integer seed for the animals' random choices, from the world seed text. */
+function hashSeed(text) {
+  let h = 2166136261;
+  for (const ch of String(text)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return h >>> 0;
 }
 
 function safeStorage() {

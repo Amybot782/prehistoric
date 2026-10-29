@@ -275,6 +275,8 @@ export class ChunkedWorld {
     } else if (prop.built) {
       this.built.delete(prop.slot);
       this.deltas.removeBuilt(chunk.key, prop.id);
+    } else if (prop.transient) {
+      prop.gone = true; // never saved: only those holding a reference (an animal eating it) need to know
     } else if (prop.stumpOf === undefined) {
       this.deltas.removeProp(chunk.key, prop.id, time);
       const raw = { id: prop.id, type: prop.type, tx: prop.tx, ty: prop.ty, x: prop.x, y: prop.y, h: prop.h };
@@ -288,7 +290,7 @@ export class ChunkedWorld {
   damageProp(prop, hpLeft) {
     prop.hpLeft = hpLeft;
     if (prop.type === 'dropped') return;
-    this.deltas.setDamage(prop.chunk, prop.id, hpLeft);
+    if (!prop.transient) this.deltas.setDamage(prop.chunk, prop.id, hpLeft);
     this.events.emit('prop:damaged', prop);
   }
 
@@ -331,6 +333,29 @@ export class ChunkedWorld {
     if (prop.collider) prop.collider.solid = !open;
     this.deltas.updateBuilt(prop.chunk, prop.id, { open });
     this.events.emit('prop:changed', prop);
+  }
+
+  /**
+   * Adds an object that is not saved and goes away by itself at world time
+   * `expires` (a carcass). It also goes when its chunk unloads.
+   */
+  addTransient(type, x, y, expires) {
+    const tx = Math.floor(x), ty = Math.floor(y);
+    const chunk = this.chunkOf(tx, ty);
+    if (!chunk) return null;
+    this._transientId = (this._transientId ?? 0) + 1;
+    const prop = this._addProp(chunk, { id: `t${this._transientId}`, type, tx, ty, x, y, h: this.heightAt(tx, ty), transient: true, expires });
+    this.events.emit('prop:added', prop);
+    return prop;
+  }
+
+  /** Removes the transient objects whose time is up; returns how many. */
+  updateTransients() {
+    let n = 0;
+    for (const chunk of this.chunks.values()) {
+      for (const p of chunk.props.filter((q) => q.transient && q.expires <= this.time)) n += this.removeProp(p) ? 1 : 0;
+    }
+    return n;
   }
 
   /** Changes the size of a dropped stack (partial pick-up). */

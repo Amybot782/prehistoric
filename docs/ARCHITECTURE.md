@@ -196,3 +196,19 @@ l'exécutable et le code Electron restent ceux du zip installé.
   construites), temps du monde, position, inventaire, équipement et besoins. Une sauvegarde par seed dans le
   stockage local de l'application, plus une copie de la précédente utilisée si la dernière est illisible.
   Les fichiers de sauvegarde avec emplacements et menu restent prévus en phase 7.
+
+## 12. Animaux et combat (phase 5)
+
+- **Espèces** (`data/creatures.json`) : uniquement des nombres (caractère, vitesses, vue, ouïe, mémoire, attaque,
+  dépeçage, poids d'apparition par biome). Le même automate (`creatures/Creature.js`) sert à toutes : repos,
+  promenade, fuite, poursuite, préparation de l'attaque, repas, retour au territoire. Il réfléchit 5 fois par seconde
+  et se déplace à chaque pas de simulation avec le même moteur de collisions que le joueur.
+- **Perception** : vue (portée, champ large, ligne de vue testée contre les obstacles, `creatures/combat.js`) et ouïe
+  (portée multipliée par le bruit de l'autre : course 1, marche 0,5, immobile 0,15, coup porté 1,2).
+- **Système** (`creatures/CreatureSystem.js`) : population autour du joueur (apparition hors de vue, disparition au
+  loin et dans les chunks déchargés), séparation des corps, armes lancées (projectiles), mort → carcasse.
+- **Carcasses** : objets « transitoires » du monde (`ChunkedWorld.addTransient`), jamais sauvegardés, récoltés avec
+  le type `meat` (même règle de récolte que le bois ou la pierre) et retirés à leur échéance.
+- **Joueur** : `PlayerSurvival.attack / throwHeld / dodge / takeDamage`, statistiques d'arme dans `items.json`
+  (`weapon`, `throw`) et réglages dans `survival.json` (`combat`).
+- **Affichage** : `render/CreatureLayer.js` (une vue par créature, dérivée de `PlayerView` pour le tri de profondeur).

@@ -443,6 +443,107 @@ try {
   const st = await state();
   console.log(`FPS mesurés dans le navigateur de test (rendu logiciel) : ${st.fps.toFixed(0)}`);
 
+  // ---- Phase 5: animals, dinosaurs and combat (fresh test area) -------------
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${url}?map=test`);
+  await page.waitForFunction(() => window.__PREHISTORIC__, null, { timeout: 20000 });
+  await page.waitForTimeout(500);
+  const near = (list, x, y) => list.map((c) => ({ ...c, d: Math.hypot(c.x - x, c.y - y) }));
+  const creature = async (id) => (await api('creatures')).find((c) => c.id === id);
+  check('Zone de test sans animaux au départ', (await state()).creatures === 0);
+
+  // A rabbit runs away from the player walking up to it.
+  const rabbitId = await api('spawnCreature', 'rabbit', 27.4, 24.5);
+  await hold(['KeyD', 'KeyW'], 900);
+  const rab = await creature(rabbitId);
+  const pr = (await state()).player;
+  check('Le lapin s’enfuit', rab.state === 'flee' && Math.hypot(rab.x - pr.x, rab.y - pr.y) > 4, `état ${rab.state}, distance ${Math.hypot(rab.x - pr.x, rab.y - pr.y).toFixed(1)}`);
+  await api('clearCreatures');
+
+  // A wolf hears the player walking, chases and bites.
+  await teleport(24.5, 24.5);
+  await api('spawnCreature', 'wolf', 27.6, 24.5);
+  await hold(['KeyS'], 400);
+  for (let i = 0; i < 20 && (await sv()).health === 100; i++) await page.waitForTimeout(200);
+  const bitten = await sv();
+  await page.screenshot({ path: join(shots, '20-loup-attaque.png') });
+  check('Le loup attaque le joueur', bitten.health < 100 && bitten.lastDamage === 'wolf', `santé ${bitten.health.toFixed(0)}`);
+  await api('clearCreatures');
+
+  // Dodge (Space): a quick dash.
+  await teleport(22.5, 25.5);
+  await api('face', 1, 0);
+  const d0 = (await state()).player;
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(400);
+  const d1 = (await state()).player;
+  check('Esquive (Espace)', d1.x - d0.x > 1.5, `${(d1.x - d0.x).toFixed(2)} tuiles`);
+
+  // Melee with the mouse: a club kills a boar; E butchers the carcass.
+  await api('give', 'stone_club', 1);
+  await api('equip', 'stone_club');
+  await api('setVital', 'health', 100);
+  await teleport(24.5, 24.5);
+  const boarId = await api('spawnCreature', 'boar', 25.5, 24.5);
+  for (let i = 0; i < 30 && (await creature(boarId)); i++) {
+    await api('setVital', 'health', 100);
+    const b = await creature(boarId);
+    if (!b) break;
+    const q = await api('screenOf', b.x, b.y);
+    await page.mouse.click(q.x, q.y - 6);
+    await page.waitForTimeout(350);
+  }
+  const carcass = (await api('propsNear', 25.5, 24.5, 3)).find((p) => p.type === 'carcass_boar');
+  await page.screenshot({ path: join(shots, '21-sanglier-abattu.png') });
+  check('Massue : le sanglier est abattu et laisse une carcasse', !(await creature(boarId)) && !!carcass, carcass ? `carcasse en (${carcass.x.toFixed(1)}, ${carcass.y.toFixed(1)})` : 'pas de carcasse');
+  if (carcass) {
+    await teleport(carcass.x - 0.7, carcass.y);
+    await api('face', 1, 0);
+    await page.keyboard.down('KeyE');
+    for (let i = 0; i < 30 && (await api('propsNear', carcass.x, carcass.y, 0.2)).some((p) => p.type === 'carcass_boar'); i++) await page.waitForTimeout(200);
+    await page.keyboard.up('KeyE');
+  }
+  const meat = await sv();
+  check('Dépecer (E) : viande et peau', meat.items.raw_meat === 3 && meat.items.hide === 1, `viande ${meat.items.raw_meat ?? 0}, peau ${meat.items.hide ?? 0}`);
+
+  // Throw a spear (right click) at a deer: it is hurt and the spear lies on the ground.
+  await api('give', 'wooden_spear', 1);
+  await api('equip', 'wooden_spear');
+  await teleport(22.5, 25.5);
+  const deerId = await api('spawnCreature', 'deer', 26.8, 25.5);
+  await page.waitForTimeout(150);
+  const dq = await api('screenOf', 26.8, 25.5);
+  await page.mouse.click(dq.x, dq.y, { button: 'right' });
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: join(shots, '22-lance.png') });
+  await page.waitForTimeout(700);
+  const deer = await creature(deerId);
+  const spear = (await api('propsNear', 25, 25.5, 6)).find((p) => p.item === 'wooden_spear');
+  check('Lancer une lance (clic droit) : le cerf est touché', deer && deer.hp < 30 && !!spear && (await sv()).equipment.hand === null, `PV du cerf ${deer?.hp}, lance au sol ${!!spear}`);
+  await api('clearCreatures');
+
+  // Killed by a wolf, then back at the start with no predator around.
+  await teleport(24.5, 24.5);
+  await api('setVital', 'health', 4);
+  await page.evaluate(() => { const w = window.__PREHISTORIC__; w.spawnCreature('wolf', 25.6, 24.5); w.spawnCreature('wolf', 23.4, 24.5); });
+  for (let i = 0; i < 25 && !(await sv()).dead; i++) await page.waitForTimeout(200);
+  const killed = await sv();
+  await page.screenshot({ path: join(shots, '23-tue-par-loup.png') });
+  for (let i = 0; i < 30 && (await sv()).dead; i++) await page.waitForTimeout(200);
+  const around0 = near(await api('creatures'), 24.5, 24.5);
+  check('Tué par un loup puis réapparition sans loup autour', killed.dead && killed.lastDamage === 'wolf' && !(await sv()).dead && around0.every((c) => c.d > 16),
+    `mort ${killed.dead} (${killed.lastDamage}), loups restants ${around0.length}`);
+
+  // Every species on screen (screenshot for the report).
+  await api('clearCreatures');
+  await teleport(24.5, 26.5);
+  const zoo = [['rabbit', 22.5, 25], ['deer', 24, 29.5], ['boar', 27, 28], ['wolf', 22, 28], ['compsognathus', 26.5, 25], ['raptor', 21, 31], ['triceratops', 27, 31]];
+  for (const [k, x, y] of zoo) await api('spawnCreature', k, x, y);
+  await api('setVital', 'health', 1e9);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(shots, '24-especes.png') });
+  await api('clearCreatures');
+
   // ---- Part 2: procedural worlds ------------------------------------------
   await page.setViewportSize({ width: 1600, height: 870 });
   await page.goto(`${url}?seed=e2e-seed`);
@@ -452,6 +553,10 @@ try {
   check('Monde procédural chargé', start.world.mode === 'procedural' && start.world.seed === 'e2e-seed' && start.world.loadedChunks > 0 && !start.overlapping,
     `départ (${start.player.x}, ${start.player.y}) ${start.tile.terrain}/${start.tile.biome}, ${start.world.loadedChunks} chunks`);
   await page.screenshot({ path: join(shots, '05-monde-depart.png') });
+  await page.waitForTimeout(3000);
+  const wild = await api('creatures');
+  check('Des animaux vivent dans le monde procédural', wild.length > 0 && wild.every((c) => Math.hypot(c.x - start.player.x, c.y - start.player.y) > 10),
+    `${wild.length} : ${[...new Set(wild.map((c) => c.species))].join(', ')}`);
 
   // Constructions and the bag are saved: build a wall, reload, it is still there.
   await page.evaluate(() => window.__PREHISTORIC__.give('wood_wall', 2));

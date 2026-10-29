@@ -74,6 +74,7 @@ export class SurvivalHud {
         ...params,
         item: params?.item && t(`item.${params.item}`),
         station: params?.station && t(`prop.${params.station}`),
+        creature: params?.creature && t(`creature.${params.creature}`),
         why: params?.why && t(params.why),
       }), '#ffe0a0')),
       ev.on('drink', () => this.note(t('action.drink'), '#a0d0ff')),
@@ -421,6 +422,8 @@ function describe(stack, def) {
   const lines = [`${t(`item.${stack.item}`)}${stack.count > 1 ? ` x${stack.count}` : ''} — ${t(`category.${def.category}`)}`];
   if (def.food) lines.push(t('effect.food', { hunger: def.food.hunger ?? 0, thirst: def.food.thirst ?? 0 }));
   if (def.tool) lines.push(t('effect.tool', { wood: def.tool.wood ?? 1, stone: def.tool.stone ?? 1, plant: def.tool.plant ?? 1 }));
+  if (def.weapon) lines.push(t('effect.weapon', { damage: def.weapon.damage, reach: def.weapon.reach }));
+  if (def.throw) lines.push(t('effect.throw', { damage: def.throw.damage, range: def.throw.range }));
   if (def.insulation) lines.push(t('effect.insulation', { insulation: def.insulation }));
   if (def.place) lines.push(t('effect.place'));
   return lines.join('\n');

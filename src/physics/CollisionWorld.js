@@ -34,11 +34,11 @@ export class CollisionWorld {
     return this.hash.size;
   }
 
-  /** True if a circle at (x, y) overlaps any solid. */
-  overlaps(x, y, r) {
+  /** True if a circle at (x, y) overlaps any solid (deep water excluded with `overTerrain`, for things in the air). */
+  overlaps(x, y, r, overTerrain = false) {
     const list = this.hash.query(x - r, y - r, x + r, y + r, this._candidates);
     for (const c of list) {
-      if (c.solid === false) continue;
+      if (c.solid === false || (overTerrain && c.owner?.kind === 'terrain')) continue;
       if (circleVsShape(x, y, r, c.shape, this._hit)) return true;
     }
     return false;

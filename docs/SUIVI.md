@@ -4,7 +4,8 @@
 
 | Version | Date | Contenu | Statut |
 |---|---|---|---|
-| 0.4.0 | 2026-10-28 | Phase 4 — Fabrication et construction : recettes, établi, feu de camp, outils, sols, murs, portes, toits, décorations, démontage, sauvegarde automatique | En attente de validation |
+| 0.5.0 | 2026-10-29 | Phase 5 — Animaux et combat : 7 espèces (dont 3 dinosaures), vue, ouïe, fuite, agressivité, territoire, chasse entre animaux, corps à corps, lance lancée, esquive, dépeçage, viande cuite, cape en peau | En attente de validation |
+| 0.4.0 | 2026-10-28 | Phase 4 — Fabrication et construction : recettes, établi, feu de camp, outils, sols, murs, portes, toits, décorations, démontage, sauvegarde automatique | Validée par Raphael |
 | 0.3.1 à 0.3.7 | 2026-10-28 | Textures de Raphael et redessinées, personnage dessiné d'après Raphael | Validées |
 | 0.3.0 | 2026-10-28 | Phase 3 — Survie et récolte : besoins, température, récolte, inventaire, équipement, interface de survie | Validée par Raphael |
 | 0.2.0 | 2026-10-28 | Phase 2 — Monde procédural : chunks, seed, relief, eau, 4 biomes, ressources naturelles, mini-carte | Validée par Raphael |
@@ -40,27 +41,29 @@
 - Construction pièce par pièce : plancher, fondation en pierre, mur, porte (s'ouvre avec E), toit de chaume, natte, pierre dressée, torche ; aperçu vert/rouge, rotation (R), démontage (X).
 - Les murs et portes fermées bloquent le joueur ; le feu de camp et le toit réchauffent.
 - Sauvegarde automatique du monde et du joueur (mondes procéduraux).
-- 135 tests unitaires et 45 vérifications de bout en bout dans Chromium.
+- Animaux et dinosaures : lapin, cerf, sanglier, loup, compsognathus, raptor, tricératops ; vue, ouïe, mémoire des menaces, fuite en groupe, agressivité, territoire, prédateurs qui chassent et mangent leurs proies ; apparition hors de vue selon le biome.
+- Combat : coups à la souris (poings, outils, lance, massue), lance et pierres lancées (clic droit), esquive (Espace), recul, attaques annoncées, barres de vie, mort avec sa cause.
+- Chasse et dépeçage : carcasses, viande crue et cuite (feu de camp), peaux, cape en peau.
+- 149 tests unitaires et 54 vérifications de bout en bout dans Chromium.
 
 ## Fonctionnalités en cours
 
-- Aucune (phase 4 livrée, en attente de validation).
+- Aucune (phase 5 livrée, en attente de validation).
 
 ## Fonctionnalités futures (V1)
 
-- Phase 5 : animaux et dinosaures, combat, esquive, réapparition.
 - Phase 6 : habitants, métiers, pathfinding, transport.
 - Phase 7 : contenu V1 complet, jour/nuit, météo, sauvegardes, menus, paramètres, sons, installateur Windows.
 
 ## Bugs connus et limitations
 
-- Phase 4 non encore essayée sur le PC de Raphael.
+- Phase 5 non encore essayée sur le PC de Raphael ; équilibrage du combat à régler selon ses retours.
+- Les animaux ne sont pas sauvegardés (d'autres apparaissent au lancement) ; pas de calcul de chemin (phase 6) ; pas de blocage, d'armure ni d'arc ; apprivoisement et montures en phase 9.
 - Sauvegarde automatique provisoire (stockage local de l'application, une par seed) : pas encore de menu ni d'emplacements (phase 7). La zone de test n'est pas sauvegardée.
 - Pas d'arbre technologique (phase 7) : seuls l'établi et le feu de camp débloquent des recettes. Pas de qualité d'objets.
 - Graphismes provisoires pour toutes les pièces construites (remplaçables par manifeste).
 - Les toits ne s'effondrent pas si on démonte le mur qui les porte. Pas de murs à fenêtre, d'escaliers ni de coffres.
-- Le feu de camp n'éclaire pas encore (le jour/nuit arrive en phase 7) et ne cuit rien (pas de viande avant la phase 5).
-- Les blessures arrivent avec le combat (phase 5).
+- Le feu de camp n'éclaire pas encore (le jour/nuit arrive en phase 7).
 - On ne peut pas encore récolter l'argile du sol.
 - Pas encore de rivières : seulement des lacs, des mers et des marais.
 - Pas de menu de création de monde (phase 7) : F9 et la seed par défaut le remplacent.

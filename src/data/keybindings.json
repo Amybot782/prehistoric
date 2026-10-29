@@ -103,5 +103,8 @@
   "hotbar8": [
     "Digit8",
     "Numpad8"
+  ],
+  "dodge": [
+    "Space"
   ]
 }
