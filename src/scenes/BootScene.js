@@ -63,7 +63,9 @@ export class BootScene extends Phaser.Scene {
       const useFile = entry.override && !this.failed.has(entry.key) && this.textures.exists(entry.key);
       if (useFile) {
         loaded++;
-        this.origins[entry.key] = { x: entry.override.originX ?? 0.5, y: entry.override.originY ?? 1 };
+        // Animation sheets may say how they are laid out (columns per row, one row per direction).
+        const { columns, rows } = entry.override;
+        this.origins[entry.key] = { x: entry.override.originX ?? 0.5, y: entry.override.originY ?? 1, columns, rows };
         continue;
       }
       const res = generatePlaceholder(entry);

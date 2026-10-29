@@ -18,6 +18,9 @@ class CreatureView extends PlayerView {
     const key = `creature_${creature.species}`;
     const o = origins[key] ?? { x: 0.5, y: 1 };
     this.sprite.setTexture(key, 0).setOrigin(o.x, o.y);
+    // Drawn sheets can have one row per screen direction ('s', 'e', 'n', 'w'); placeholders are one profile row, mirrored.
+    this.columns = o.columns ?? FRAMES;
+    this.rows = o.rows ?? null;
     this.shadow.setScale(Math.max(0.6, creature.radius / 0.25));
     this.flip = false;
   }
@@ -31,12 +34,19 @@ class CreatureView extends PlayerView {
     this.depth = this.computeDepth(w.x, w.y);
     this.sprite.setPosition(s.x, s.y).setDepth(this.depth);
     this.shadow.setPosition(s.x, s.y).setDepth(this.depth - 0.001);
-    const f = c.moving ? WALK[Math.floor(c.distanceWalked / Math.max(0.2, c.radius)) % WALK.length] : 0;
-    this.sprite.setFrame(Math.min(f, FRAMES - 1));
-    // Facing left or right on screen; kept when moving straight up or down the screen.
-    const dx = c.dirX - c.dirY;
-    if (Math.abs(dx) > 0.1) this.flip = dx < 0;
-    this.sprite.setFlipX(this.flip);
+    const step = Math.floor(c.distanceWalked / Math.max(0.2, c.radius));
+    const dx = c.dirX - c.dirY; // screen direction of the facing
+    if (this.rows) {
+      const dy = (c.dirX + c.dirY) / 2;
+      const dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'e' : 'w') : dy >= 0 ? 's' : 'n';
+      const row = Math.max(0, this.rows.indexOf(dir));
+      this.sprite.setFrame(row * this.columns + (c.moving ? step % this.columns : 0));
+    } else {
+      this.sprite.setFrame(c.moving ? WALK[step % WALK.length] : 0);
+      // Facing left or right on screen; kept when moving straight up or down the screen.
+      if (Math.abs(dx) > 0.1) this.flip = dx < 0;
+      this.sprite.setFlipX(this.flip);
+    }
     if (time - c.hurtAt < HURT_FLASH) this.sprite.setTint(0xff5050);
     else if (c.state === 'windup' && Math.floor(time * 12) % 2 === 0) this.sprite.setTint(0xffe0a0);
     else this.sprite.clearTint();

@@ -523,7 +523,12 @@ export class WorldScene extends Phaser.Scene {
       logs: () => logger.entries.slice(-50),
       // Equips an item from the bag (what a right click in the inventory does).
       equip: (item) => this.survival.useSlot(this.survival.inventory.slots.findIndex((x) => x?.item === item)),
-      spawnCreature: (species, x, y) => this.creatures.spawn(species, x, y).id,
+      // Optional facing (world direction), e.g. to make it look at the player.
+      spawnCreature: (species, x, y, dx, dy) => {
+        const c = this.creatures.spawn(species, x, y);
+        if (dx || dy) c.face(dx, dy);
+        return c.id;
+      },
       creatures: () => this.creatures.creatures.map((c) => ({ id: c.id, species: c.species, x: c.x, y: c.y, hp: c.hp, state: c.state, target: c.target === this.player ? 'player' : c.target?.species ?? null })),
       clearCreatures: () => { for (const c of [...this.creatures.creatures]) this.creatures.remove(c); },
       setSpawning: (on) => { this.creatures.spawning = !!on; },
