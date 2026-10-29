@@ -181,7 +181,7 @@ export class Creature extends Entity {
         // Hit and run: after the bite it sprints off to one side, then turns back for another pass.
         if (d.hitAndRun && tg === ctx.player) {
           this.state = 'retreat';
-          this.timer = this.rng.range(0.5, 0.8); // 3 to 4 tiles: it stays close
+          this.timer = this.rng.range(0.75, 1.05); // 3 to 4 tiles: it stays close (after the bite)
           this.turn = this.rng.next() < 0.5 ? -1 : 1;
         }
         const dx = tg.x - this.x, dy = tg.y - this.y;
@@ -197,6 +197,8 @@ export class Creature extends Entity {
           this.lastSeen = ctx.time;
           break;
         }
+        // Finishes the bite facing its target before running off.
+        if (ctx.time - this.attackAt < 0.25) { this.brake(dt, ctx); break; }
         let ax = this.x - tg.x, ay = this.y - tg.y;
         const l = Math.hypot(ax, ay) || 1;
         ax /= l; ay /= l;

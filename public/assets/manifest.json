@@ -697,7 +697,14 @@
         "n",
         "nw",
         "w",
-        "sw"
+        "sw",
+        "bite-s",
+        "bite-se",
+        "bite-e",
+        "bite-ne",
+        "bite-nw",
+        "bite-w",
+        "bite-sw"
       ]
     },
     "creature_raptor_dead": {
