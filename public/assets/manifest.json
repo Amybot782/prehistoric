@@ -684,30 +684,26 @@
     },
     "creature_raptor": {
       "file": "assets/dinosaurs/raptor.png",
-      "frameWidth": 42,
+      "frameWidth": 28,
       "frameHeight": 28,
       "originX": 0.5,
-      "originY": 0.9642857142857143,
-      "columns": 6,
+      "originY": 0.9821428571428571,
+      "columns": 8,
       "rows": [
         "s",
+        "se",
         "e",
+        "ne",
         "n",
+        "nw",
         "w",
-        "run-s",
-        "run-e",
-        "run-n",
-        "run-w",
-        "bite-s",
-        "bite-e",
-        "bite-n",
-        "bite-w"
+        "sw"
       ]
     },
     "creature_raptor_dead": {
       "file": "assets/dinosaurs/raptor_mort.png",
       "originX": 0.5,
-      "originY": 0.9642857142857143
+      "originY": 0.9821428571428571
     }
   }
 }

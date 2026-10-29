@@ -9,6 +9,7 @@ import { itemTextureKey } from '../assets/assetCatalog.js';
  */
 const FRAMES = 4;
 const WALK = [1, 2, 3, 2];
+const EIGHT = ['e', 'se', 's', 'sw', 'w', 'nw', 'n', 'ne']; // by screen angle, clockwise from the right
 const HURT_FLASH = 0.15;
 const BAR_SECONDS = 5;
 
@@ -21,6 +22,7 @@ class CreatureView extends PlayerView {
     // Drawn sheets can have one row per screen direction ('s', 'e', 'n', 'w'); placeholders are one profile row, mirrored.
     this.columns = o.columns ?? FRAMES;
     this.rows = o.rows ?? null;
+    this.eight = !!this.rows?.includes('se');
     this.shadow.setScale(Math.max(0.6, creature.radius / 0.25));
     this.flip = false;
   }
@@ -37,7 +39,9 @@ class CreatureView extends PlayerView {
     const dx = c.dirX - c.dirY; // screen direction of the facing
     if (this.rows) {
       const dy = (c.dirX + c.dirY) / 2;
-      const dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'e' : 'w') : dy >= 0 ? 's' : 'n';
+      let dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'e' : 'w') : dy >= 0 ? 's' : 'n';
+      // Sheets with diagonal rows: the nearest of 8 screen directions.
+      if (this.eight) dir = EIGHT[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8];
       // Distance per animation frame: longer strides when running, so the legs do not spin.
       const stride = (c.def.stride ?? Math.max(0.2, c.radius)) * (c.running ? 1 : 0.6);
       const phase = c.distanceWalked / stride;
