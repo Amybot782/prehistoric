@@ -34,14 +34,25 @@ class CreatureView extends PlayerView {
     this.depth = this.computeDepth(w.x, w.y);
     this.sprite.setPosition(s.x, s.y).setDepth(this.depth);
     this.shadow.setPosition(s.x, s.y).setDepth(this.depth - 0.001);
-    const step = Math.floor(c.distanceWalked / Math.max(0.2, c.radius));
     const dx = c.dirX - c.dirY; // screen direction of the facing
     if (this.rows) {
       const dy = (c.dirX + c.dirY) / 2;
       const dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'e' : 'w') : dy >= 0 ? 's' : 'n';
-      const row = Math.max(0, this.rows.indexOf(dir));
-      this.sprite.setFrame(row * this.columns + (c.moving ? step % this.columns : 0));
+      // Distance per animation frame: longer strides when running, so the legs do not spin.
+      const stride = (c.def.stride ?? Math.max(0.2, c.radius)) * (c.running ? 1 : 0.6);
+      const phase = c.distanceWalked / stride;
+      const since = time - c.attackAt;
+      let mode = c.running ? 'run' : 'walk', col = c.moving ? Math.floor(phase) % this.columns : 0;
+      if (c.state === 'windup' || since < 0.3) {
+        mode = 'bite';
+        col = c.state === 'windup' ? 0 : since < 0.12 ? 1 : 2;
+      }
+      const row = this.rows.indexOf(mode === 'walk' ? dir : `${mode}-${dir}`);
+      this.sprite.setFrame((row >= 0 ? row : Math.max(0, this.rows.indexOf(dir))) * this.columns + (row >= 0 || mode !== 'bite' ? col : 0));
+      // Running bounds: each stride lifts it a little off the ground, like a leap.
+      if (mode === 'run' && c.moving) this.sprite.y -= Math.round(2 * Math.abs(Math.sin((phase / 3) * Math.PI)));
     } else {
+      const step = Math.floor(c.distanceWalked / Math.max(0.2, c.radius));
       this.sprite.setFrame(c.moving ? WALK[step % WALK.length] : 0);
       // Facing left or right on screen; kept when moving straight up or down the screen.
       if (Math.abs(dx) > 0.1) this.flip = dx < 0;

@@ -214,3 +214,24 @@ describe('créatures', () => {
     expect(world.propsNear(26.5, 26.5, 0.5).filter((p) => p.type === 'carcass_rabbit').length).toBe(0);
   });
 });
+
+describe('raptor', () => {
+  it('mord, repart en courant, puis revient attaquer', () => {
+    const { sys, sv, player, run } = setup();
+    sv.vitals.health = 1e9;
+    const r = sys.spawn('raptor', 27.5, 24.5);
+    r.face(-1, 0);
+    let bites = 0, last = sv.vitals.health, maxAway = 0, retreated = false;
+    for (let t = 0; t < 12; t += 0.1) {
+      run(0.1);
+      sv.hurtCd = 0;
+      if (sv.vitals.health < last) bites++;
+      last = sv.vitals.health;
+      if (r.state === 'retreat') retreated = true;
+      if (bites === 1) maxAway = Math.max(maxAway, dist(r, player));
+    }
+    expect(retreated).toBe(true);
+    expect(maxAway).toBeGreaterThan(2.5);
+    expect(bites).toBeGreaterThanOrEqual(2);
+  });
+});

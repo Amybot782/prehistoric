@@ -1,5 +1,5 @@
 {
-  "_comment": "Remplacement des graphismes provisoires. Pour utiliser une vraie image, renseigner 'file' (chemin relatif à ce dossier public) et, pour une planche d'animation, frameWidth/frameHeight. originX/originY (0 à 1) indiquent le point de l'image posé au sol. Sans 'file', le jeu génère le graphisme provisoire. Pour les animaux dessinés : 'columns' = images de marche par ligne, 'rows' = direction de chaque ligne à l'écran (s = bas/face, e = droite, n = haut/dos, w = gauche).",
+  "_comment": "Remplacement des graphismes provisoires. Pour utiliser une vraie image, renseigner 'file' (chemin relatif à ce dossier public) et, pour une planche d'animation, frameWidth/frameHeight. originX/originY (0 à 1) indiquent le point de l'image posé au sol. Sans 'file', le jeu génère le graphisme provisoire. Pour les animaux dessinés : 'columns' = images de marche par ligne, 'rows' = direction de chaque ligne à l'écran (s = bas/face, e = droite, n = haut/dos, w = gauche), avec en option des lignes de course 'run-s'… et de morsure 'bite-s'… (3 images : recul, gueule ouverte, claquement).",
   "version": 1,
   "overrides": {
     "player": {
@@ -693,7 +693,15 @@
         "s",
         "e",
         "n",
-        "w"
+        "w",
+        "run-s",
+        "run-e",
+        "run-n",
+        "run-w",
+        "bite-s",
+        "bite-e",
+        "bite-n",
+        "bite-w"
       ]
     },
     "creature_raptor_dead": {

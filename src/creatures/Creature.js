@@ -11,6 +11,8 @@ import { lineClear } from './combat.js';
  *   chase          runs to a target (player or prey) and attacks in reach
  *   windup         the attack is coming: it stops a moment, then bites/charges
  *                  (the player can dodge during this time)
+ *   retreat        after biting the player, a hit-and-run hunter (raptor)
+ *                  sprints off to one side, then comes back
  *   eat            a hungry carnivore eats a carcass
  *   home           a territorial creature walks back after a chase
  *
@@ -43,6 +45,7 @@ export class Creature extends Entity {
     this.thinkIn = rng.range(0, THINK_EVERY);
     this.fed = rng.range(20, 90); // seconds before a carnivore gets hungry
     this.hurtAt = -99;
+    this.attackAt = -99;
     this.stuck = 0;
     this.fleeFor = 0; // seconds spent running away: prey tires, so predators can catch it
     this.turn = 1;
@@ -99,7 +102,7 @@ export class Creature extends Entity {
   startChase(target, time) {
     if (this.target !== target) this.target = target;
     this.lastSeen = time;
-    if (this.state !== 'windup') this.state = 'chase';
+    if (this.state !== 'windup' && this.state !== 'retreat') this.state = 'chase';
   }
 
   /** One fixed simulation step. */
@@ -172,12 +175,33 @@ export class Creature extends Entity {
         if ((this.timer -= dt) > 0) break;
         const tg = this.target;
         this.attackCd = d.attack.cooldown;
+        this.attackAt = ctx.time;
         this.state = 'chase';
         if (!tg || tg.dead) break;
+        // Hit and run: after the bite it sprints off to one side, then turns back for another pass.
+        if (d.hitAndRun && tg === ctx.player) {
+          this.state = 'retreat';
+          this.timer = this.rng.range(0.5, 0.8); // 3 to 4 tiles: it stays close
+          this.turn = this.rng.next() < 0.5 ? -1 : 1;
+        }
         const dx = tg.x - this.x, dy = tg.y - this.y;
         const gap = Math.hypot(dx, dy) - tg.radius - this.radius;
         // Out of reach by now (the target stepped back or dodged sideways): the attack misses.
         if (gap <= d.attack.reach + 0.25 && lineClear(ctx.collisions, this.x, this.y, tg.x, tg.y)) ctx.hit(this, tg);
+        break;
+      }
+      case 'retreat': {
+        const tg = this.target;
+        if (!tg || (this.timer -= dt) <= 0) {
+          this.state = tg ? 'chase' : 'idle';
+          this.lastSeen = ctx.time;
+          break;
+        }
+        let ax = this.x - tg.x, ay = this.y - tg.y;
+        const l = Math.hypot(ax, ay) || 1;
+        ax /= l; ay /= l;
+        const k = this.turn * 0.8; // about 40 degrees off the straight line away
+        this.moveDir(ax - ay * k, ay + ax * k, d.run, dt, ctx);
         break;
       }
       case 'eat': {
@@ -219,7 +243,7 @@ export class Creature extends Entity {
     const t = ctx.time;
     const p = ctx.player;
     const playerOk = p && !ctx.playerDead;
-    if (this.state === 'windup') return;
+    if (this.state === 'windup' || this.state === 'retreat') return;
 
     if (d.temper === 'fearful') {
       if (playerOk && this.perceives(p, ctx)) return this.alarm(p, ctx);
