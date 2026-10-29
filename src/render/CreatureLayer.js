@@ -25,6 +25,7 @@ class CreatureView extends PlayerView {
     this.eight = !!this.rows?.includes('se');
     this.shadow.setScale(Math.max(0.6, creature.radius / 0.25));
     this.flip = false;
+    this.side = 'e';
   }
 
   update(alpha, snap, time) {
@@ -42,6 +43,9 @@ class CreatureView extends PlayerView {
       let dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'e' : 'w') : dy >= 0 ? 's' : 'n';
       // Sheets with diagonal rows: the nearest of 8 screen directions.
       if (this.eight) dir = EIGHT[(Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) + 8) % 8];
+      // Side-only sheets (rows 'e' and 'w'): keep the last side while moving straight up or down the screen.
+      if (Math.abs(dx) > 0.1) this.side = dx < 0 ? 'w' : 'e';
+      if (!this.rows.includes(dir)) dir = this.side;
       // Distance per animation frame: longer strides when running, so the legs do not spin.
       const stride = (c.def.stride ?? Math.max(0.2, c.radius)) * (c.running ? 1 : 0.6);
       const phase = c.distanceWalked / stride;

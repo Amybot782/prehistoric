@@ -704,6 +704,23 @@
       "file": "assets/dinosaurs/raptor_mort.png",
       "originX": 0.5,
       "originY": 0.9821428571428571
+    },
+    "creature_compsognathus": {
+      "file": "assets/dinosaurs/compsognathus.png",
+      "frameWidth": 24,
+      "frameHeight": 14,
+      "originX": 0.5,
+      "originY": 0.9642857142857143,
+      "columns": 6,
+      "rows": [
+        "e",
+        "w"
+      ]
+    },
+    "creature_compsognathus_dead": {
+      "file": "assets/dinosaurs/compsognathus_mort.png",
+      "originX": 0.5,
+      "originY": 0.9642857142857143
     }
   }
 }
